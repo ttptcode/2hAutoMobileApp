@@ -1,6 +1,6 @@
 package com.example.a2hauto.adapter;
 
-import android.graphics.Color;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.example.a2hauto.DetailActivity;
 import com.example.a2hauto.R;
 import com.example.a2hauto.model.Listing;
 import java.text.NumberFormat;
@@ -71,6 +72,13 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
                 .centerCrop()
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(holder.ivVehicle);
+
+        // Click event to show detail
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), DetailActivity.class);
+            intent.putExtra("listing", listing);
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override

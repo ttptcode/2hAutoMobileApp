@@ -21,6 +21,7 @@ import com.example.a2hauto.model.Listing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -75,8 +76,17 @@ public class MainActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<List<Listing>> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        adapter.setListings(apiResponse.getData());
+                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
+                        // Filter listings with status "Active"
+                        List<Listing> activeListings = apiResponse.getData().stream()
+                                .filter(listing -> "Active".equalsIgnoreCase(listing.getStatus()))
+                                .collect(Collectors.toList());
+                        
+                        adapter.setListings(activeListings);
+                        
+                        if (activeListings.isEmpty()) {
+                            Toast.makeText(MainActivity.this, "Hiện không có bài đăng nào đang hoạt động", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
                         Toast.makeText(MainActivity.this, apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     }

@@ -1,8 +1,9 @@
 package com.example.a2hauto.model;
 
 import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
 
-public class Listing {
+public class Listing implements Serializable {
     @SerializedName("listingId")
     private String listingId;
     @SerializedName("listingType")
@@ -13,18 +14,27 @@ public class Listing {
     private String userName;
     @SerializedName("itemTitle")
     private String itemTitle;
+    @SerializedName("status")
+    private String status;
     @SerializedName("item")
     private Item item;
     @SerializedName("address")
     private String address;
+    @SerializedName("detail")
+    private String detail;
+    @SerializedName("createdAt")
+    private String createdAt;
 
     public String getListingId() { return listingId; }
     public String getListingType() { return listingType; }
     public double getBuyNowPrice() { return buyNowPrice; }
     public String getUserName() { return userName; }
     public String getItemTitle() { return itemTitle; }
+    public String getStatus() { return status; }
     public Item getItem() { return item; }
     public String getAddress() { return address; }
+    public String getDetail() { return detail; }
+    public String getCreatedAt() { return createdAt; }
     
     public String getDisplayTitle() {
         if (itemTitle != null && !itemTitle.isEmpty()) return itemTitle;
