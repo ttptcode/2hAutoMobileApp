@@ -104,7 +104,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="?attr/selectableItemBackground"
-                    android:src="@android:drawable/ic_media_slideshow" />
+                    android:src="@android:drawable/ic_menu_camera" />
                 <TextView
                     android:id="@+id/tvVideoStatus"
                     android:layout_width="wrap_content"
