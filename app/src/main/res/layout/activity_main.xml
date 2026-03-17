@@ -73,16 +73,91 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btnHeaderFavorite"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_circle_button"
-                    android:backgroundTint="@color/favorite_soft"
-                    android:contentDescription="@string/header_favorite"
-                    android:padding="12dp"
-                    android:src="@android:drawable/btn_star_big_off"
-                    android:tint="@color/favorite_tint" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnHeaderFavorite"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_circle_button"
+                        android:backgroundTint="@color/favorite_soft"
+                        android:contentDescription="@string/header_favorite"
+                        android:padding="12dp"
+                        android:src="@android:drawable/btn_star_big_off"
+                        android:tint="@color/favorite_tint" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnHeaderUpgrade"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:layout_marginStart="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="42dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="@string/header_upgrade"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="@color/accent_yellow"
+                        app:cornerRadius="14dp"
+                        app:icon="@android:drawable/btn_star_big_on"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp"
+                        app:iconTint="@color/text_primary" />
+
+                    <FrameLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnHeaderLogin"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="42dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="0dp"
+                            android:minHeight="42dp"
+                            android:paddingHorizontal="14dp"
+                            android:text="@string/action_login"
+                            android:textAllCaps="false"
+                            android:textColor="@color/primary_teal_dark"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            app:backgroundTint="@color/primary_teal_soft"
+                            app:cornerRadius="16dp"
+                            app:icon="@android:drawable/ic_menu_myplaces"
+                            app:iconGravity="textStart"
+                            app:iconPadding="6dp"
+                            app:iconTint="@color/primary_teal_dark" />
+
+                        <TextView
+                            android:id="@+id/tvHeaderAvatar"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_circle_button"
+                            android:backgroundTint="@color/primary_teal"
+                            android:clickable="true"
+                            android:contentDescription="@string/header_avatar_content"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackgroundBorderless"
+                            android:gravity="center"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:visibility="gone"
+                            tools:text="NA" />
+                    </FrameLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -366,6 +441,51 @@
                     android:padding="10dp"
                     android:src="@android:drawable/btn_star_big_off"
                     android:tint="@color/favorite_tint" />
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMiniHeaderLogin"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="36dp"
+                        android:paddingHorizontal="10dp"
+                        android:text="@string/header_login_short"
+                        android:textAllCaps="false"
+                        android:textColor="@color/primary_teal_dark"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        app:backgroundTint="@color/primary_teal_soft"
+                        app:cornerRadius="14dp"
+                        app:icon="@android:drawable/ic_menu_myplaces"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp"
+                        app:iconTint="@color/primary_teal_dark" />
+
+                    <TextView
+                        android:id="@+id/tvMiniHeaderAvatar"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_circle_button"
+                        android:backgroundTint="@color/primary_teal"
+                        android:clickable="true"
+                        android:contentDescription="@string/header_avatar_content"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:text="NA" />
+                </FrameLayout>
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
@@ -468,7 +588,6 @@
                 android:id="@+id/navFavorites"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -495,9 +614,40 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/navPost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:minHeight="60dp"
+                android:orientation="vertical"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="10dp">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@android:drawable/ic_input_add"
+                    android:tint="@color/text_muted" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/nav_post"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/navAccount"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -509,12 +659,14 @@
                 android:paddingVertical="10dp">
 
                 <ImageView
+                    android:id="@+id/ivNavAccountIcon"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@android:drawable/ic_menu_myplaces"
                     android:tint="@color/text_muted" />
 
                 <TextView
+                    android:id="@+id/tvNavAccountLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"

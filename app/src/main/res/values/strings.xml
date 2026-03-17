@@ -14,9 +14,20 @@
     <string name="featured_section_subtitle">Danh sách xe mới cập nhật từ hệ thống 2H Auto.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_favorites">Yêu thích</string>
+    <string name="nav_post">Đăng tin</string>
     <string name="nav_account">Tài khoản</string>
     <string name="menu">Danh mục</string>
+    <string name="menu_categories_title">Danh mục phương tiện</string>
+    <string name="menu_categories_subtitle">Chọn nhanh nhóm sản phẩm bạn muốn khám phá hôm nay.</string>
+    <string name="menu_option_car">Ô tô</string>
+    <string name="menu_option_motorbike">Xe máy</string>
+    <string name="menu_option_truck">Xe tải</string>
+    <string name="menu_option_electric">Xe điện</string>
+    <string name="menu_option_bicycle">Xe đạp</string>
+    <string name="menu_option_other_vehicle">Phương tiện khác</string>
+    <string name="menu_option_spare_parts">Phụ tùng xe</string>
     <string name="header_favorite">Mục yêu thích</string>
+    <string name="header_upgrade">Nâng cấp</string>
     <string name="seller_prefix">Đăng bởi %1$s</string>
     <string name="seller_fallback">Đăng bởi 2H Auto</string>
     <string name="listing_type_fallback">Mua ngay</string>
@@ -36,6 +47,7 @@
     <string name="hint_password">Nhập mật khẩu</string>
     <string name="hint_full_name">Nhập họ và tên</string>
     <string name="action_login">Đăng nhập</string>
+    <string name="header_login_short">ĐN</string>
     <string name="action_register">Đăng ký</string>
     <string name="action_logging_in">Đang đăng nhập…</string>
     <string name="action_registering">Đang đăng ký…</string>
@@ -67,7 +79,16 @@
     <string name="account_dialog_title">Tài khoản của bạn</string>
     <string name="account_dialog_message">Họ tên: %1$s\nSố điện thoại: %2$s</string>
     <string name="action_logout">Đăng xuất</string>
+    <string name="action_upgrade">Nâng cấp gói</string>
+    <string name="action_upgrade_now">Xem gói Pro</string>
     <string name="logout_success">Bạn đã đăng xuất khỏi tài khoản.</string>
     <string name="account_guest_name">Khách hàng 2H Auto</string>
     <string name="dialog_google_login">Đăng nhập bằng Google</string>
+    <string name="header_avatar_content">Avatar tài khoản</string>
+    <string name="upgrade_dialog_title">Gói Freemium 2H Auto</string>
+    <string name="upgrade_dialog_subtitle">Chọn gói phù hợp để đăng tin hiệu quả hơn.</string>
+    <string name="upgrade_free_title">Gói Free</string>
+    <string name="upgrade_free_features">- Đăng tối đa 3 tin/tháng\n- Hiển thị tiêu chuẩn\n- Hỗ trợ cơ bản</string>
+    <string name="upgrade_pro_title">Gói Pro (gợi ý)</string>
+    <string name="upgrade_pro_features">- Đăng tin không giới hạn\n- Ưu tiên hiển thị ở đầu danh sách\n- Bộ huy hiệu "Pro Seller" + thống kê chi tiết\n- Ưu tiên hỗ trợ nhanh</string>
 </resources>
