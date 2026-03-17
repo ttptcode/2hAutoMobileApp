@@ -201,15 +201,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/app/src/main/res/values/themes.xml">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/app/src/main/res/values/themes.xml" />
-              <option name="originalContent" value="&lt;resources xmlns:tools=&quot;http://schemas.android.com/tools&quot;&gt;&#10;    &lt;!-- Base application theme. --&gt;&#10;    &lt;style name=&quot;Base.Theme._2hAuto&quot; parent=&quot;Theme.Material3.DayNight.NoActionBar&quot;&gt;&#10;        &lt;!-- Customize your light theme here. --&gt;&#10;        &lt;!-- &lt;item name=&quot;colorPrimary&quot;&gt;@color/my_light_primary&lt;/item&gt; --&gt;&#10;    &lt;/style&gt;&#10;&#10;    &lt;style name=&quot;Theme._2hAuto&quot; parent=&quot;Base.Theme._2hAuto&quot; /&gt;&#10;&lt;/resources&gt;" />
-              <option name="updatedContent" value="&lt;resources&gt;&#10;    &lt;!-- Base application theme. --&gt;&#10;    &lt;style name=&quot;Base.Theme._2hAuto&quot; parent=&quot;Theme.Material3.DayNight.NoActionBar&quot;&gt;&#10;        &lt;item name=&quot;colorPrimary&quot;&gt;@color/primary_teal&lt;/item&gt;&#10;        &lt;item name=&quot;colorOnPrimary&quot;&gt;@color/white&lt;/item&gt;&#10;        &lt;item name=&quot;colorSecondary&quot;&gt;@color/accent_yellow&lt;/item&gt;&#10;        &lt;item name=&quot;android:statusBarColor&quot;&gt;@android:color/transparent&lt;/item&gt;&#10;        &lt;item name=&quot;android:navigationBarColor&quot;&gt;@color/white&lt;/item&gt;&#10;        &lt;item name=&quot;android:windowLightStatusBar&quot;&gt;true&lt;/item&gt;&#10;    &lt;/style&gt;&#10;&#10;    &lt;style name=&quot;Theme._2hAuto&quot; parent=&quot;Base.Theme._2hAuto&quot; /&gt;&#10;&lt;/resources&gt;" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
       </map>
     </option>
   </component>
