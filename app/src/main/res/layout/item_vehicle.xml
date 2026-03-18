@@ -5,23 +5,30 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="20dp"
-    android:layout_marginVertical="8dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="24dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/item_vehicle_card_foreground"
+    app:cardBackgroundColor="@color/item_vehicle_card_background"
+    app:cardCornerRadius="14dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/card_border"
     app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="124dp"
+        android:padding="10dp">
 
         <ImageView
             android:id="@+id/ivVehicle"
-            android:layout_width="match_parent"
-            android:layout_height="208dp"
+            android:layout_width="112dp"
+            android:layout_height="0dp"
             android:contentDescription="@string/vehicle_image"
             android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:src="@tools:sample/backgrounds/scenic" />
 
@@ -29,158 +36,111 @@
             android:id="@+id/tvConditionTag"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="14dp"
-            android:background="@drawable/bg_tag"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
-            android:textColor="@android:color/white"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_nav_active"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:textColor="@color/primary_teal_dark"
             android:textSize="11sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivVehicle"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="Đã qua sử dụng" />
+            tools:text="Đang mở bán" />
 
-        <ImageView
-            android:id="@+id/ivFavoriteBadge"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="14dp"
-            android:background="@drawable/bg_circle_button"
-            android:backgroundTint="@color/white_80"
-            android:contentDescription="@null"
-            android:padding="9dp"
+        <ImageButton
+            android:id="@+id/btnFavorite"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_favorite_button"
+            android:contentDescription="@string/favorite_add"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:padding="7dp"
+            android:scaleType="centerInside"
             android:src="@android:drawable/btn_star_big_off"
-            app:tint="@color/favorite_tint"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/favorite_tint" />
 
         <TextView
             android:id="@+id/tvName"
-            android:layout_width="0.dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="10dp"
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:textSize="14sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/ivVehicle"
+            app:layout_constraintEnd_toStartOf="@id/btnFavorite"
+            app:layout_constraintStart_toEndOf="@id/ivVehicle"
+            app:layout_constraintTop_toBottomOf="@id/tvConditionTag"
             tools:text="Mercedes Benz EQS 680" />
 
         <TextView
             android:id="@+id/tvPrice"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:textColor="@color/primary_teal_dark"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivVehicle"
             app:layout_constraintTop_toBottomOf="@id/tvName"
             tools:text="5.000.000.000 đ" />
 
         <TextView
             android:id="@+id/tvSpecs"
-            android:layout_width="0.dp"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="6dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvPrice"
-            tools:text="2025 • Ô tô • Xăng" />
-
-        <TextView
-            android:id="@+id/tvListingType"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_nav_active"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="7dp"
-            android:textColor="@color/primary_teal_dark"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvSpecs"
-            tools:text="Bán trực tiếp" />
-
-        <TextView
-            android:id="@+id/tvSeller"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="10dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="@id/tvListingType"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/tvListingType"
-            app:layout_constraintTop_toTopOf="@id/tvListingType"
-            tools:text="Đăng bởi showroom Premium EV" />
-
-        <TextView
-            android:id="@+id/tvSummary"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="12dp"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvListingType"
-            tools:text="Mercedes • 12.000 km • Hộp số tự động • Ngoại thất xanh ngọc" />
-
-        <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="14dp"
-            android:background="@color/card_border"
-            app:layout_constraintTop_toBottomOf="@id/tvSummary" />
+            app:layout_constraintStart_toEndOf="@id/ivVehicle"
+            app:layout_constraintTop_toBottomOf="@id/tvPrice"
+            tools:text="2022 • 12.000 km • Tự động" />
 
         <ImageView
-            android:id="@+id/ivLocation"
-            android:layout_width="14dp"
-            android:layout_height="14dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
+            android:id="@+id/ivMetaLocation"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="10dp"
             android:contentDescription="@null"
             android:src="@android:drawable/ic_menu_mylocation"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider"
+            app:layout_constraintBottom_toBottomOf="@id/tvMeta"
+            app:layout_constraintStart_toEndOf="@id/ivVehicle"
+            app:layout_constraintTop_toTopOf="@id/tvMeta"
             app:tint="@color/text_muted" />
 
         <TextView
-            android:id="@+id/tvAddress"
-            android:layout_width="0.dp"
+            android:id="@+id/tvMeta"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="10dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@color/text_muted"
-            android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="@id/ivLocation"
+            android:textSize="11sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/ivLocation"
-            app:layout_constraintTop_toTopOf="@id/ivLocation"
-            tools:text="Lê Văn Việt, TP. Thủ Đức" />
+            app:layout_constraintStart_toEndOf="@id/ivMetaLocation"
+            app:layout_constraintTop_toBottomOf="@id/tvSpecs"
+            tools:text="TP. Thu Duc • 2 gio truoc" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
