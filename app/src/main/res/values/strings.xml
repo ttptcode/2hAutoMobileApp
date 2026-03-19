@@ -107,6 +107,7 @@
     <string name="action_logout">Đăng xuất</string>
     <string name="action_upgrade">Nâng cấp gói</string>
     <string name="action_upgrade_now">Xem gói Pro</string>
+    <string name="account_menu_personal_info">Thông tin cá nhân</string>
     <string name="logout_success">Bạn đã đăng xuất khỏi tài khoản.</string>
     <string name="account_guest_name">Khách hàng 2H Auto</string>
     <string name="dialog_google_login">Đăng nhập bằng Google</string>

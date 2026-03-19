@@ -31,6 +31,7 @@ import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.Listing;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
@@ -163,12 +164,38 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     }
 
     private void handleAccountAction() {
-        if (authSessionManager.isLoggedIn()) {
-            showAccountDialog();
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
             return;
         }
 
-        showLoginDialog();
+        showAccountBottomSheet();
+    }
+
+    private void showAccountBottomSheet() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View contentView = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_account_actions, findViewById(android.R.id.content), false);
+        dialog.setContentView(contentView);
+
+        View optionProfile = contentView.findViewById(R.id.optionProfile);
+        View optionLogout = contentView.findViewById(R.id.optionLogout);
+
+        optionProfile.setOnClickListener(v -> {
+            dialog.dismiss();
+            startActivity(new Intent(this, ProfileActivity.class));
+        });
+
+        optionLogout.setOnClickListener(v -> {
+            dialog.dismiss();
+            authSessionManager.logout();
+            refreshAuthHeaderUi();
+            syncFavoritesFromServer();
+            Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
+            showLoginDialog();
+        });
+
+        dialog.show();
     }
 
     private void showLoginDialog() {
@@ -181,24 +208,6 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         if (getSupportFragmentManager().findFragmentByTag(RegisterDialogFragment.TAG) == null) {
             new RegisterDialogFragment().show(getSupportFragmentManager(), RegisterDialogFragment.TAG);
         }
-    }
-
-    private void showAccountDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.account_dialog_title)
-                .setMessage(getString(
-                        R.string.account_dialog_message,
-                        authSessionManager.getDisplayName(),
-                        authSessionManager.getPhoneNumber()
-                ))
-                .setNegativeButton(android.R.string.cancel, null)
-                .setNeutralButton(R.string.action_upgrade, (dialog, which) -> showUpgradeDialog())
-                .setPositiveButton(R.string.action_logout, (dialog, which) -> {
-                    authSessionManager.logout();
-                    refreshAuthHeaderUi();
-                    Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
-                })
-                .show();
     }
 
     private void showUpgradeDialog() {
@@ -280,7 +289,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
         tvHeaderAvatar.setText(initials);
         tvMiniHeaderAvatar.setText(initials);
-        ivNavAccountIcon.setImageResource(isLoggedIn ? android.R.drawable.presence_online : android.R.drawable.ic_menu_myplaces);
+        ivNavAccountIcon.setImageResource(R.drawable.ic_profile_outline);
         ivNavAccountIcon.setColorFilter(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_muted));
         tvNavAccountLabel.setTextColor(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_secondary));
     }
