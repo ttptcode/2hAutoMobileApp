@@ -23,6 +23,10 @@ public class Item implements Serializable {
     private String condition;
     @SerializedName("imageUrls")
     private List<String> imageUrls;
+    @SerializedName("videoUrl")
+    private String videoUrl;
+    @SerializedName("videoUrls")
+    private List<String> videoUrls;
     @SerializedName("color")
     private String color;
     @SerializedName("seat")
@@ -50,6 +54,8 @@ public class Item implements Serializable {
     public String getMileage() { return mileage; }
     public String getCondition() { return condition; }
     public List<String> getImageUrls() { return imageUrls; }
+    public String getVideoUrl() { return videoUrl; }
+    public List<String> getVideoUrls() { return videoUrls; }
     public String getColor() { return color; }
     public String getSeat() { return seat; }
     public String getOrigin() { return origin; }

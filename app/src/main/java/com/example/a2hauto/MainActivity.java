@@ -2,10 +2,16 @@ package com.example.a2hauto;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.graphics.Rect;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -30,14 +36,17 @@ import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.FavoriteItem;
+import com.example.a2hauto.model.Item;
 import com.example.a2hauto.model.Listing;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +55,14 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity implements LoginDialogFragment.LoginDialogListener, RegisterDialogFragment.RegisterDialogListener {
+
+    private enum HomeCategoryFilter {
+        ALL,
+        CAR,
+        MOTORBIKE,
+        ELECTRIC,
+        ACCESSORIES
+    }
 
     private static final String TAG = "MainActivity";
     private static final float MINI_HEADER_FADE_START = 0.38f;
@@ -57,6 +74,16 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private TextView tvMiniListingCount;
     private TextView tvSectionSubtitle;
     private TextView tvEmptyState;
+    private TextView tvFilterStatus;
+    private android.widget.EditText etHeroSearch;
+    private android.widget.EditText etMiniSearch;
+    private View btnHeroClearSearch;
+    private View btnMiniClearSearch;
+    private TextView chipHomeAll;
+    private TextView chipHomeCar;
+    private TextView chipHomeMotorbike;
+    private TextView chipHomeElectric;
+    private TextView chipHomeAccessories;
     private View btnHeaderUpgrade;
     private View btnHeaderLogin;
     private View btnMiniHeaderLogin;
@@ -75,6 +102,10 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
     private final Set<String> cachedFavoriteListingIds = new HashSet<>();
+    private final List<Listing> allActiveListings = new ArrayList<>();
+    private String homeSearchQuery = "";
+    private HomeCategoryFilter selectedHomeCategory = HomeCategoryFilter.ALL;
+    private boolean isSyncingSearchInputs = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +123,17 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvListingCount = findViewById(R.id.tvListingCount);
         tvMiniListingCount = findViewById(R.id.tvMiniListingCount);
         tvSectionSubtitle = findViewById(R.id.tvSectionSubtitle);
+        tvFilterStatus = findViewById(R.id.tvFilterStatus);
         tvEmptyState = findViewById(R.id.tvEmptyState);
+        etHeroSearch = findViewById(R.id.etHeroSearch);
+        etMiniSearch = findViewById(R.id.etMiniSearch);
+        btnHeroClearSearch = findViewById(R.id.btnHeroFilter);
+        btnMiniClearSearch = findViewById(R.id.btnMiniFilter);
+        chipHomeAll = findViewById(R.id.chipHomeAll);
+        chipHomeCar = findViewById(R.id.chipHomeCar);
+        chipHomeMotorbike = findViewById(R.id.chipHomeMotorbike);
+        chipHomeElectric = findViewById(R.id.chipHomeElectric);
+        chipHomeAccessories = findViewById(R.id.chipHomeAccessories);
         btnHeaderUpgrade = findViewById(R.id.btnHeaderUpgrade);
         btnHeaderLogin = findViewById(R.id.btnHeaderLogin);
         btnMiniHeaderLogin = findViewById(R.id.btnMiniHeaderLogin);
@@ -107,6 +148,8 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         rvVehicles.setHasFixedSize(true);
         adapter = new VehicleAdapter(new ArrayList<>());
         rvVehicles.setAdapter(adapter);
+        updateHomeFilterUi();
+        attachSearchInputListeners();
 
         setupActions();
         setupMiniHeaderBehavior();
@@ -122,7 +165,13 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> openFavoritesScreen());
         findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> openFavoritesScreen());
-        findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
+        btnHeroClearSearch.setOnClickListener(v -> clearSearchQuery());
+        btnMiniClearSearch.setOnClickListener(v -> clearSearchQuery());
+        chipHomeAll.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ALL));
+        chipHomeCar.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.CAR));
+        chipHomeMotorbike.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.MOTORBIKE));
+        chipHomeElectric.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ELECTRIC));
+        chipHomeAccessories.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ACCESSORIES));
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         btnMiniHeaderLogin.setOnClickListener(v -> handleAccountAction());
@@ -136,6 +185,31 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         super.onResume();
         refreshAuthHeaderUi();
         syncFavoritesFromServer();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
+            View focusedView = getCurrentFocus();
+            boolean focusedSearchInput = focusedView == etHeroSearch || focusedView == etMiniSearch;
+            if (focusedSearchInput) {
+                boolean touchInsideSearch = isTouchInsideView(etHeroSearch, ev) || isTouchInsideView(etMiniSearch, ev);
+                if (!touchInsideSearch) {
+                    finishHomeSearchInteraction(focusedView);
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private boolean isTouchInsideView(View targetView, MotionEvent ev) {
+        if (targetView == null || ev == null || targetView.getVisibility() != View.VISIBLE) {
+            return false;
+        }
+
+        Rect hitRect = new Rect();
+        targetView.getGlobalVisibleRect(hitRect);
+        return hitRect.contains((int) ev.getRawX(), (int) ev.getRawY());
     }
 
     private void openFavoritesScreen() {
@@ -369,13 +443,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         LinearLayout optionContainer = dialogView.findViewById(R.id.menuOptionContainer);
 
         List<CategoryMenuItem> menuItems = new ArrayList<>();
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_car), R.drawable.ic_menu_category_car));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_motorbike), R.drawable.ic_menu_category_motorbike));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_truck), R.drawable.ic_menu_category_truck));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_electric), R.drawable.ic_menu_category_electric));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_bicycle), R.drawable.ic_menu_category_bicycle));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_other_vehicle), android.R.drawable.ic_menu_mapmode));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_spare_parts), android.R.drawable.ic_menu_manage));
+        menuItems.add(new CategoryMenuItem(getString(R.string.home_filter_all), android.R.drawable.ic_menu_sort_alphabetically, HomeCategoryFilter.ALL));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_car), R.drawable.ic_menu_category_car, HomeCategoryFilter.CAR));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_motorbike), R.drawable.ic_menu_category_motorbike, HomeCategoryFilter.MOTORBIKE));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_electric), R.drawable.ic_menu_category_electric, HomeCategoryFilter.ELECTRIC));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_accessories), android.R.drawable.ic_menu_manage, HomeCategoryFilter.ACCESSORIES));
 
         final androidx.appcompat.app.AlertDialog[] menuDialogRef = new androidx.appcompat.app.AlertDialog[1];
         for (CategoryMenuItem item : menuItems) {
@@ -386,7 +458,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             ivIcon.setImageResource(item.iconResId);
             tvTitle.setText(item.title);
             optionView.setOnClickListener(v -> {
-                showComingSoon(item.title);
+                setHomeCategoryFilter(item.categoryFilter);
                 if (menuDialogRef[0] != null) {
                     menuDialogRef[0].dismiss();
                 }
@@ -396,6 +468,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         }
 
         androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.home_filter_menu_title)
                 .setView(dialogView)
                 .create();
         menuDialogRef[0] = dialog;
@@ -405,10 +478,231 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private static class CategoryMenuItem {
         private final String title;
         private final int iconResId;
+        private final HomeCategoryFilter categoryFilter;
 
-        private CategoryMenuItem(String title, int iconResId) {
+        private CategoryMenuItem(String title, int iconResId, HomeCategoryFilter categoryFilter) {
             this.title = title;
             this.iconResId = iconResId;
+            this.categoryFilter = categoryFilter;
+        }
+    }
+
+    private void setHomeCategoryFilter(HomeCategoryFilter categoryFilter) {
+        selectedHomeCategory = categoryFilter;
+        applyHomeFilters();
+    }
+
+    private void clearSearchQuery() {
+        if (!TextUtils.isEmpty(homeSearchQuery)) {
+            homeSearchQuery = "";
+            syncSearchInputs();
+            applyHomeFilters();
+        }
+        finishHomeSearchInteraction(null);
+    }
+
+    private void attachSearchInputListeners() {
+        TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No-op.
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // No-op.
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (isSyncingSearchInputs) {
+                    return;
+                }
+
+                String latestQuery = editable == null ? "" : editable.toString();
+                if (TextUtils.equals(homeSearchQuery, latestQuery)) {
+                    return;
+                }
+
+                homeSearchQuery = latestQuery;
+                syncSearchInputs();
+                applyHomeFilters();
+            }
+        };
+
+        etHeroSearch.addTextChangedListener(watcher);
+        etMiniSearch.addTextChangedListener(watcher);
+
+        android.widget.TextView.OnEditorActionListener editorActionListener = (view, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                finishHomeSearchInteraction(view);
+                return true;
+            }
+            return false;
+        };
+        etHeroSearch.setOnEditorActionListener(editorActionListener);
+        etMiniSearch.setOnEditorActionListener(editorActionListener);
+    }
+
+    private void finishHomeSearchInteraction(View sourceView) {
+        etHeroSearch.clearFocus();
+        etMiniSearch.clearFocus();
+
+        View keyboardAnchor = sourceView != null ? sourceView : getCurrentFocus();
+        if (keyboardAnchor == null) {
+            keyboardAnchor = etHeroSearch;
+        }
+
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (inputMethodManager != null && keyboardAnchor.getWindowToken() != null) {
+            inputMethodManager.hideSoftInputFromWindow(keyboardAnchor.getWindowToken(), 0);
+        }
+    }
+
+    private void syncSearchInputs() {
+        isSyncingSearchInputs = true;
+        if (!TextUtils.equals(etHeroSearch.getText(), homeSearchQuery)) {
+            etHeroSearch.setText(homeSearchQuery);
+            etHeroSearch.setSelection(etHeroSearch.getText() == null ? 0 : etHeroSearch.getText().length());
+        }
+        if (!TextUtils.equals(etMiniSearch.getText(), homeSearchQuery)) {
+            etMiniSearch.setText(homeSearchQuery);
+            etMiniSearch.setSelection(etMiniSearch.getText() == null ? 0 : etMiniSearch.getText().length());
+        }
+        isSyncingSearchInputs = false;
+    }
+
+    private void applyHomeFilters() {
+        List<Listing> filteredListings = new ArrayList<>();
+        for (Listing listing : allActiveListings) {
+            if (matchesCategory(listing) && matchesSearch(listing)) {
+                filteredListings.add(listing);
+            }
+        }
+
+        updateHomeFilterUi();
+        updateListingUi(filteredListings);
+    }
+
+    private boolean matchesCategory(Listing listing) {
+        if (selectedHomeCategory == HomeCategoryFilter.ALL) {
+            return true;
+        }
+
+        String content = createSearchableText(listing);
+        switch (selectedHomeCategory) {
+            case CAR:
+                return content.contains("oto") || content.contains("o to") || content.contains("car") || content.contains("sedan") || content.contains("suv");
+            case MOTORBIKE:
+                return content.contains("xe may") || content.contains("xemay") || content.contains("motor") || content.contains("moto");
+            case ELECTRIC:
+                return content.contains("xe dien") || content.contains("xedien") || content.contains("electric") || content.contains("ev");
+            case ACCESSORIES:
+                return content.contains("phu kien") || content.contains("phu tung") || content.contains("accessor") || content.contains("part");
+            default:
+                return true;
+        }
+    }
+
+    private boolean matchesSearch(Listing listing) {
+        String normalizedQuery = normalize(homeSearchQuery);
+        if (TextUtils.isEmpty(normalizedQuery)) {
+            return true;
+        }
+        return createSearchableText(listing).contains(normalizedQuery);
+    }
+
+    private String createSearchableText(Listing listing) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(nonNull(listing.getDisplayTitle())).append(' ')
+                .append(nonNull(listing.getAddress())).append(' ')
+                .append(nonNull(listing.getDetail())).append(' ')
+                .append(nonNull(listing.getListingType())).append(' ')
+                .append(nonNull(listing.getUserName()));
+
+        Item item = listing.getItem();
+        if (item != null) {
+            builder.append(' ')
+                    .append(nonNull(item.getBrand())).append(' ')
+                    .append(nonNull(item.getModel())).append(' ')
+                    .append(nonNull(item.getItemTypeName()));
+        }
+        return normalize(builder.toString());
+    }
+
+    private String nonNull(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String normalize(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return "";
+        }
+
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .toLowerCase(Locale.ROOT)
+                .trim();
+        return normalized.replace('đ', 'd');
+    }
+
+    private void updateHomeFilterUi() {
+        syncSearchInputs();
+        boolean hasSearchQuery = !TextUtils.isEmpty(homeSearchQuery);
+        btnHeroClearSearch.setVisibility(hasSearchQuery ? View.VISIBLE : View.GONE);
+        btnMiniClearSearch.setVisibility(hasSearchQuery ? View.VISIBLE : View.GONE);
+
+        if (hasActiveHomeFilters()) {
+            if (!TextUtils.isEmpty(homeSearchQuery) && selectedHomeCategory != HomeCategoryFilter.ALL) {
+                tvFilterStatus.setText(getString(R.string.home_filter_result_with_both, getSelectedCategoryLabel(), homeSearchQuery));
+            } else if (!TextUtils.isEmpty(homeSearchQuery)) {
+                tvFilterStatus.setText(getString(R.string.home_filter_result_with_search, homeSearchQuery));
+            } else {
+                tvFilterStatus.setText(getString(R.string.home_filter_result_with_category, getSelectedCategoryLabel()));
+            }
+            tvFilterStatus.setVisibility(View.VISIBLE);
+        } else {
+            tvFilterStatus.setVisibility(View.GONE);
+        }
+
+        updateCategoryChipStyles();
+    }
+
+    private void updateCategoryChipStyles() {
+        styleCategoryChip(chipHomeAll, selectedHomeCategory == HomeCategoryFilter.ALL);
+        styleCategoryChip(chipHomeCar, selectedHomeCategory == HomeCategoryFilter.CAR);
+        styleCategoryChip(chipHomeMotorbike, selectedHomeCategory == HomeCategoryFilter.MOTORBIKE);
+        styleCategoryChip(chipHomeElectric, selectedHomeCategory == HomeCategoryFilter.ELECTRIC);
+        styleCategoryChip(chipHomeAccessories, selectedHomeCategory == HomeCategoryFilter.ACCESSORIES);
+    }
+
+    private void styleCategoryChip(TextView chip, boolean isSelected) {
+        if (chip == null) {
+            return;
+        }
+
+        chip.setBackgroundResource(isSelected ? R.drawable.bg_nav_active : R.drawable.bg_filter_chip);
+        chip.setTextColor(ContextCompat.getColor(this, isSelected ? R.color.primary_teal_dark : R.color.white));
+        chip.setTypeface(chip.getTypeface(), isSelected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        chip.setAlpha(isSelected ? 1f : 0.86f);
+    }
+
+    private boolean hasActiveHomeFilters() {
+        return selectedHomeCategory != HomeCategoryFilter.ALL || !TextUtils.isEmpty(homeSearchQuery);
+    }
+
+    private String getSelectedCategoryLabel() {
+        switch (selectedHomeCategory) {
+            case CAR:
+                return getString(R.string.category_car);
+            case MOTORBIKE:
+                return getString(R.string.category_motorbike);
+            case ELECTRIC:
+                return getString(R.string.category_electric);
+            case ACCESSORIES:
+                return getString(R.string.category_accessories);
+            default:
+                return getString(R.string.home_filter_all);
         }
     }
 
@@ -470,17 +764,21 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                                 .filter(listing -> "Active".equalsIgnoreCase(listing.getStatus()))
                                 .collect(Collectors.toList());
 
-                        updateListingUi(activeListings);
+                        allActiveListings.clear();
+                        allActiveListings.addAll(activeListings);
+                        applyHomeFilters();
 
                         if (activeListings.isEmpty()) {
                             Toast.makeText(MainActivity.this, "Hiện không có bài đăng nào đang hoạt động", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        updateListingUi(new ArrayList<>());
+                        allActiveListings.clear();
+                        applyHomeFilters();
                         Toast.makeText(MainActivity.this, apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    updateListingUi(new ArrayList<>());
+                    allActiveListings.clear();
+                    applyHomeFilters();
                     Log.e(TAG, "Error: " + response.code());
                     Toast.makeText(MainActivity.this, "Không thể tải dữ liệu", Toast.LENGTH_SHORT).show();
                 }
@@ -489,21 +787,28 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             @Override
             public void onFailure(Call<ApiResponse<List<Listing>>> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
-                updateListingUi(new ArrayList<>());
+                allActiveListings.clear();
+                applyHomeFilters();
                 Log.e(TAG, "Failure: " + t.getMessage());
                 Toast.makeText(MainActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void updateListingUi(List<Listing> activeListings) {
-        adapter.setListings(activeListings);
+    private void updateListingUi(List<Listing> listings) {
+        adapter.setListings(listings);
         adapter.setFavoriteListingIds(cachedFavoriteListingIds);
-        tvListingCount.setText(getString(R.string.listing_count_format, activeListings.size()));
-        tvMiniListingCount.setText(getString(R.string.listing_count_format, activeListings.size()));
-        tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
+        tvListingCount.setText(getString(R.string.listing_count_format, listings.size()));
+        tvMiniListingCount.setText(getString(R.string.listing_count_format, listings.size()));
 
-        boolean isEmpty = activeListings.isEmpty();
+        if (!hasActiveHomeFilters()) {
+            tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
+        } else {
+            tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
+        }
+
+        boolean isEmpty = listings.isEmpty();
+        tvEmptyState.setText(hasActiveHomeFilters() ? R.string.home_empty_filtered : R.string.empty_listings);
         tvEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         rvVehicles.setVisibility(isEmpty ? View.INVISIBLE : View.VISIBLE);
 

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <ImageView
+        android:id="@+id/ivDetailMedia"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/vehicle_image"
+        android:scaleType="centerCrop" />
+
+    <VideoView
+        android:id="@+id/videoDetailMedia"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/progressMedia"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <ImageButton
+        android:id="@+id/btnPlayVideo"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_video_control_circle"
+        android:contentDescription="@string/detail_video_toggle"
+        android:padding="10dp"
+        android:src="@android:drawable/ic_media_play"
+        android:tint="@color/white"
+        android:visibility="gone" />
+</FrameLayout>
+
+
+
