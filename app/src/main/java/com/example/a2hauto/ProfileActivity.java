@@ -1,5 +1,6 @@
 package com.example.a2hauto;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -46,6 +47,7 @@ public class ProfileActivity extends AppCompatActivity {
     private View indicatorPackages;
     private View layoutPersonalInfo;
     private View layoutPackages;
+    private MaterialButton btnViewPackages;
     private MaterialButton btnUpdateProfile;
 
     private AuthSessionManager authSessionManager;
@@ -67,6 +69,7 @@ public class ProfileActivity extends AppCompatActivity {
         indicatorPackages = findViewById(R.id.indicatorPackages);
         layoutPersonalInfo = findViewById(R.id.layoutPersonalInfo);
         layoutPackages = findViewById(R.id.layoutPackages);
+        btnViewPackages = findViewById(R.id.btnViewPackages);
         btnUpdateProfile = findViewById(R.id.btnUpdateProfile);
 
         authSessionManager = new AuthSessionManager(this);
@@ -83,6 +86,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         setupTabs();
         btnUpdateProfile.setOnClickListener(v -> showUpdateProfileDialog());
+        btnViewPackages.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
         loadUserProfile();
     }
 

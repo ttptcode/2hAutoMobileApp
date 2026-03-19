@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> openFavoritesScreen());
         findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
-        btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        btnHeaderUpgrade.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         btnMiniHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
