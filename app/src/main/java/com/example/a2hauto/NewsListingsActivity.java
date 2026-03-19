@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Pair;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -75,6 +77,13 @@ public class NewsListingsActivity extends AppCompatActivity {
     private ConversationAdapter conversationAdapter;
     private ApiService apiService;
     private AuthSessionManager authSessionManager;
+    private int currentNavItem = 2; // Current position: 2=Post
+    private int previousNavItem = 0; // Track previous position for smart transitions
+    
+    // Gesture detection
+    private GestureDetector gestureDetector;
+    private static final int SWIPE_THRESHOLD = 100;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
     private final List<JsonElement> allConversations = new ArrayList<>();
     private NewsTab selectedTab = NewsTab.SHOWING;
     private CategoryFilter selectedCategory = CategoryFilter.ALL;
@@ -97,6 +106,7 @@ public class NewsListingsActivity extends AppCompatActivity {
         setupToolbar();
         setupRecyclerView();
         setupActions();
+        setupGestureDetection();
 
         fetchConversations();
     }
@@ -144,6 +154,10 @@ public class NewsListingsActivity extends AppCompatActivity {
 
     private void setupActions() {
         btnCreatePost.setOnClickListener(view -> startActivity(new Intent(this, ChooseCategoryActivity.class)));
+        
+        // Bottom Navigation Bar Click Listeners
+        setupBottomNavigation();
+        
         tvTabShowing.setOnClickListener(view -> {
             selectedTab = NewsTab.SHOWING;
             updateTabStyles();
@@ -166,6 +180,104 @@ public class NewsListingsActivity extends AppCompatActivity {
         chipBicycle.setOnClickListener(view -> setCategoryFilter(CategoryFilter.BICYCLE));
         chipElectric.setOnClickListener(view -> setCategoryFilter(CategoryFilter.ELECTRIC));
         chipParts.setOnClickListener(view -> setCategoryFilter(CategoryFilter.PARTS));
+    }
+    
+    private void setupBottomNavigation() {
+        android.widget.FrameLayout bottomNavContainer = findViewById(R.id.bottomNavContainer);
+        if (bottomNavContainer != null) {
+            android.view.View navView = getLayoutInflater().inflate(R.layout.bottom_navigation_bar, bottomNavContainer, true);
+            
+            android.widget.LinearLayout navHome = navView.findViewById(R.id.navHome);
+            android.widget.LinearLayout navFavorites = navView.findViewById(R.id.navFavorites);
+            android.widget.LinearLayout navPost = navView.findViewById(R.id.navPost);
+            android.widget.LinearLayout navChat = navView.findViewById(R.id.navChat);
+            android.widget.LinearLayout navAccount = navView.findViewById(R.id.navAccount);
+            
+            if (navHome != null) {
+                navHome.setOnClickListener(v -> {
+                    // Post(2) → Home(0): right to left
+                    previousNavItem = currentNavItem;
+                    currentNavItem = 0;
+                    startActivity(new Intent(this, MainActivity.class));
+                    finish();
+                    overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+                });
+                unhighlightNavItem(navHome);
+            }
+            
+            if (navFavorites != null) {
+                navFavorites.setOnClickListener(v -> {
+                    // Post(2) → Favorites(1): right to left
+                    previousNavItem = currentNavItem;
+                    currentNavItem = 1;
+                    startActivity(new Intent(this, FavoritesActivity.class));
+                    finish();
+                    overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+                });
+                unhighlightNavItem(navFavorites);
+            }
+            
+            if (navPost != null) {
+                highlightNavItem(navPost);
+            }
+            
+            if (navChat != null) {
+                navChat.setOnClickListener(v -> {
+                    Toast.makeText(this, "Chức năng Chat sẽ sớm được bổ sung", Toast.LENGTH_SHORT).show();
+                });
+                unhighlightNavItem(navChat);
+            }
+            
+            if (navAccount != null) {
+                navAccount.setOnClickListener(v -> {
+                    if (authSessionManager.isLoggedIn()) {
+                        String accountMessage = getString(R.string.account_dialog_message, 
+                            authSessionManager.getDisplayName(), 
+                            authSessionManager.getPhoneNumber());
+                        Toast.makeText(this, accountMessage, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Vui lòng đăng nhập để xem tài khoản", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                unhighlightNavItem(navAccount);
+            }
+        }
+    }
+    
+    private void highlightNavItem(android.widget.LinearLayout navItem) {
+        navItem.setBackgroundResource(R.drawable.bg_nav_active);
+        
+        // Update icon and text color for highlighted state
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            android.view.View child = navItem.getChildAt(i);
+            if (child instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) child).setColorFilter(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.primary_teal_dark), 
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof android.widget.TextView) {
+                ((android.widget.TextView) child).setTextColor(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.primary_teal_dark));
+                ((android.widget.TextView) child).setTypeface(((android.widget.TextView) child).getTypeface(), android.graphics.Typeface.BOLD);
+            }
+        }
+    }
+    
+    private void unhighlightNavItem(android.widget.LinearLayout navItem) {
+        navItem.setBackground(null);
+        
+        // Reset icon and text color
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            android.view.View child = navItem.getChildAt(i);
+            if (child instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) child).setColorFilter(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.text_muted), 
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof android.widget.TextView) {
+                ((android.widget.TextView) child).setTextColor(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary));
+                ((android.widget.TextView) child).setTypeface(((android.widget.TextView) child).getTypeface(), android.graphics.Typeface.NORMAL);
+            }
+        }
     }
 
     private void setCategoryFilter(CategoryFilter categoryFilter) {
@@ -445,5 +557,54 @@ public class NewsListingsActivity extends AppCompatActivity {
         chip.setBackgroundResource(isSelected ? R.drawable.bg_filter_chip : R.drawable.bg_search_surface);
         chip.setTextColor(getColor(isSelected ? R.color.primary_teal_dark : R.color.text_secondary));
         chip.setTypeface(chip.getTypeface(), isSelected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+    }
+
+    private void setupGestureDetection() {
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe Right: Post(2) → Favorites(1) → Home(0)
+                                onSwipeRight();
+                            } else {
+                                // Swipe Left: no action (Post is last)
+                                onSwipeLeft();
+                            }
+                            return true;
+                        }
+                    }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector != null) {
+            gestureDetector.onTouchEvent(event);
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private void onSwipeRight() {
+        // Swipe Right: Post(2) → Favorites(1)
+        previousNavItem = currentNavItem;
+        currentNavItem = 1;
+        startActivity(new Intent(this, FavoritesActivity.class));
+        finish();
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+    }
+
+    private void onSwipeLeft() {
+        // Swipe Left: Post(2) is last, do nothing
     }
 }

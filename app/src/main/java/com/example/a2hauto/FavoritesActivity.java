@@ -1,8 +1,13 @@
 package com.example.a2hauto;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,6 +51,16 @@ public class FavoritesActivity extends AppCompatActivity {
     private FavoritesAdapter favoritesAdapter;
     private ApiService apiService;
     private AuthSessionManager authSessionManager;
+    
+    // Navbar fields
+    private LinearLayout navHome, navFavorites, navPost, navChat, navAccount;
+    private int currentNavItem = 1; // Current position: 1=Favorites
+    private int previousNavItem = 0; // Track previous position for smart transitions
+    
+    // Gesture detection
+    private GestureDetector gestureDetector;
+    private static final int SWIPE_THRESHOLD = 100;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
 
     private boolean selectionMode = false;
     private final Set<String> selectedListingIds = new HashSet<>();
@@ -106,9 +121,109 @@ public class FavoritesActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> deleteSelectedFavorites())
                 .show();
         });
+        
+        setupBottomNavigation();
 
         bindSelectionUi();
         fetchFavorites();
+        setupGestureDetection();
+    }
+    
+    private void setupBottomNavigation() {
+        FrameLayout bottomNavContainer = findViewById(R.id.bottomNavContainer);
+        if (bottomNavContainer != null) {
+            View navView = getLayoutInflater().inflate(R.layout.bottom_navigation_bar, bottomNavContainer, true);
+            
+            navHome = navView.findViewById(R.id.navHome);
+            navFavorites = navView.findViewById(R.id.navFavorites);
+            navPost = navView.findViewById(R.id.navPost);
+            navChat = navView.findViewById(R.id.navChat);
+            navAccount = navView.findViewById(R.id.navAccount);
+            
+            if (navHome != null) {
+                navHome.setOnClickListener(v -> {
+                    // Favorites(1) → Home(0): right to left
+                    previousNavItem = currentNavItem;
+                    currentNavItem = 0;
+                    startActivity(new Intent(this, MainActivity.class));
+                    finish();
+                    overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+                });
+                // Unhighlight navHome
+                unhighlightNavItem(navHome);
+            }
+            
+            if (navFavorites != null) {
+                // Highlight navFavorites with icon and text color
+                highlightNavItem(navFavorites);
+            }
+            
+            if (navPost != null) {
+                navPost.setOnClickListener(v -> {
+                    // Favorites(1) → Post(2): left to right
+                    previousNavItem = currentNavItem;
+                    currentNavItem = 2;
+                    startActivity(new Intent(this, NewsListingsActivity.class));
+                    finish();
+                    overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+                });
+            }
+            
+            if (navChat != null) {
+                navChat.setOnClickListener(v -> {
+                    Toast.makeText(this, "Chức năng Chat sẽ sớm được bổ sung", Toast.LENGTH_SHORT).show();
+                });
+            }
+            
+            if (navAccount != null) {
+                navAccount.setOnClickListener(v -> {
+                    if (authSessionManager.isLoggedIn()) {
+                        String accountMessage = getString(R.string.account_dialog_message, 
+                            authSessionManager.getDisplayName(), 
+                            authSessionManager.getPhoneNumber());
+                        Toast.makeText(this, accountMessage, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Vui lòng đăng nhập để xem tài khoản", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }
+    }
+    
+    private void highlightNavItem(LinearLayout navItem) {
+        navItem.setBackgroundResource(R.drawable.bg_nav_active);
+        
+        // Update icon and text color for highlighted state
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            View child = navItem.getChildAt(i);
+            if (child instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) child).setColorFilter(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.primary_teal_dark), 
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof TextView) {
+                ((TextView) child).setTextColor(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.primary_teal_dark));
+                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.BOLD);
+            }
+        }
+    }
+    
+    private void unhighlightNavItem(LinearLayout navItem) {
+        navItem.setBackground(null);
+        
+        // Reset icon and text color
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            View child = navItem.getChildAt(i);
+            if (child instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) child).setColorFilter(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.text_muted), 
+                    android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof TextView) {
+                ((TextView) child).setTextColor(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary));
+                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.NORMAL);
+            }
+        }
     }
 
     @Override
@@ -304,6 +419,60 @@ public class FavoritesActivity extends AppCompatActivity {
         favoritesAdapter.setSelectionMode(false);
         bindSelectionUi();
 
-        Toast.makeText(this, getString(R.string.favorite_deleted_count, removedIds.size()), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.favorite_deleted_count, removedIds.size()), Toast.LENGTH_SHORT).show();
+    }
+
+    private void setupGestureDetection() {
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe Right: Favorites(1) → Home(0)
+                                onSwipeRight();
+                            } else {
+                                // Swipe Left: Favorites(1) → Post(2)
+                                onSwipeLeft();
+                            }
+                            return true;
+                        }
+                    }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector != null) {
+            gestureDetector.onTouchEvent(event);
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private void onSwipeRight() {
+        // Swipe Right: Favorites(1) → Home(0)
+        previousNavItem = currentNavItem;
+        currentNavItem = 0;
+        startActivity(new Intent(this, MainActivity.class));
+        finish();
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+    }
+
+    private void onSwipeLeft() {
+        // Swipe Left: Favorites(1) → Post(2)
+        previousNavItem = currentNavItem;
+        currentNavItem = 2;
+        startActivity(new Intent(this, NewsListingsActivity.class));
+        finish();
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 }
