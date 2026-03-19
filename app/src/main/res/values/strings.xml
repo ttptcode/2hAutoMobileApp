@@ -14,7 +14,6 @@
     <string name="featured_section_subtitle">Danh sách xe mới cập nhật từ hệ thống 2H Auto.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_favorites">Yêu thích</string>
-    <string name="nav_post">Bài đăng</string>
     <string name="news_title">Danh sách bài đăng</string>
     <string name="news_subtitle">Tin nhắn và bài đăng liên quan đến tài khoản của bạn.</string>
     <string name="news_open_post_count">%1$d cuộc trò chuyện</string>
@@ -160,6 +159,7 @@
     <string name="action_logout">Đăng xuất</string>
     <string name="action_upgrade">Nâng cấp gói</string>
     <string name="action_upgrade_now">Xem gói Pro</string>
+    <string name="account_menu_personal_info">Thông tin cá nhân</string>
     <string name="logout_success">Bạn đã đăng xuất khỏi tài khoản.</string>
     <string name="account_guest_name">Khách hàng 2H Auto</string>
     <string name="dialog_google_login">Đăng nhập bằng Google</string>

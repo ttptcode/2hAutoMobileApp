@@ -691,7 +691,7 @@
                     android:id="@+id/ivNavAccountIcon"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@android:drawable/ic_menu_myplaces"
+                    android:src="@drawable/ic_profile_outline"
                     android:tint="@color/text_muted" />
 
                 <TextView

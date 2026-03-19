@@ -4,6 +4,7 @@ import com.example.a2hauto.model.auth.LoginRequest;
 import com.example.a2hauto.model.auth.RegisterRequest;
 import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
+import com.example.a2hauto.model.UserProfileResponse;
 import com.google.gson.JsonElement;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.CreateReviewRequest;
@@ -72,4 +73,7 @@ public interface ApiService {
 
     @POST("api/Favorites/toggle")
     Call<ApiResponse<JsonElement>> toggleFavorite(@Body ToggleFavoriteRequest request);
+
+    @GET("api/Users/{id}")
+    Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
 }

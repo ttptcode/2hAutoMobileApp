@@ -67,6 +67,10 @@
             android:name=".FavoritesActivity"
             android:exported="false"
             android:label="Yêu thích" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:label="Tài khoản" />
     </application>
 
 </manifest>
