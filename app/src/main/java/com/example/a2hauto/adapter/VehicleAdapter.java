@@ -98,11 +98,7 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(holder.ivVehicle);
 
-<<<<<<< feature/chat_V3
-        holder.ivFavoriteBadge.setOnClickListener(v -> {
-=======
         holder.favoriteActionView.setOnClickListener(v -> {
->>>>>>> main
             String listingId = listing.getListingId();
             if (TextUtils.isEmpty(listingId)) {
                 Toast.makeText(holder.itemView.getContext(), R.string.favorite_action_failed, Toast.LENGTH_SHORT).show();
@@ -232,22 +228,14 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
 
     public static class VehicleViewHolder extends RecyclerView.ViewHolder {
         ImageView ivVehicle;
-<<<<<<< feature/chat_V3
-        ImageView ivFavoriteBadge;
-=======
         ImageView favoriteActionView;
->>>>>>> main
         AppCompatCheckBox cbSelectFavorite;
         TextView tvName, tvPrice, tvSpecs, tvAddress, tvSummary;
 
         public VehicleViewHolder(@NonNull View itemView) {
             super(itemView);
             ivVehicle = itemView.findViewById(R.id.ivVehicle);
-<<<<<<< feature/chat_V3
-            ivFavoriteBadge = itemView.findViewById(R.id.ivFavoriteBadge);
-=======
             favoriteActionView = itemView.findViewById(R.id.ivFavoriteBadge);
->>>>>>> main
             cbSelectFavorite = itemView.findViewById(R.id.cbSelectFavorite);
             tvName = itemView.findViewById(R.id.tvName);
             tvPrice = itemView.findViewById(R.id.tvPrice);
@@ -258,19 +246,11 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
     }
 
     private void bindFavoriteState(VehicleViewHolder holder, boolean isFavorite) {
-<<<<<<< feature/chat_V3
-        holder.ivFavoriteBadge.setSelected(isFavorite);
-        holder.ivFavoriteBadge.setImageResource(isFavorite
-                ? R.drawable.ic_favorite_heart_filled
-                : R.drawable.ic_favorite_heart_outline);
-        holder.ivFavoriteBadge.setContentDescription(holder.itemView.getContext().getString(
-=======
         holder.favoriteActionView.setSelected(isFavorite);
         holder.favoriteActionView.setImageResource(isFavorite
                 ? R.drawable.ic_favorite_heart_filled
                 : R.drawable.ic_favorite_heart_outline);
         holder.favoriteActionView.setContentDescription(holder.itemView.getContext().getString(
->>>>>>> main
                 isFavorite ? R.string.favorite_remove : R.string.favorite_add));
     }
 

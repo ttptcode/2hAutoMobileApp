@@ -8,12 +8,6 @@ import com.example.a2hauto.R;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-<<<<<<< feature/chat_V3
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-=======
->>>>>>> main
 
 public class AuthSessionManager {
 
@@ -24,7 +18,6 @@ public class AuthSessionManager {
     private static final String KEY_AUTH_TOKEN = "auth_token";
     private static final String KEY_PENDING_FULL_NAME = "pending_full_name";
     private static final String KEY_PENDING_PHONE = "pending_phone";
-    private static final Pattern JWT_PATTERN = Pattern.compile("([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)");
 
     private final SharedPreferences sharedPreferences;
     private final Context appContext;
@@ -42,15 +35,10 @@ public class AuthSessionManager {
     public void saveSession(String fullName, String phone, String authToken) {
         String sanitizedName = fullName == null ? "" : fullName.trim();
         String normalizedPhone = AuthValidator.normalizePhone(phone);
-        String normalizedToken = normalizeAuthToken(authToken);
         sharedPreferences.edit()
                 .putString(KEY_FULL_NAME, sanitizedName)
                 .putString(KEY_PHONE, normalizedPhone)
-<<<<<<< feature/chat_V3
-                .putString(KEY_AUTH_TOKEN, normalizedToken)
-=======
                 .putString(KEY_AUTH_TOKEN, normalizeAuthToken(authToken))
->>>>>>> main
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .putBoolean(KEY_IS_LOGGED_IN, true)
@@ -86,16 +74,7 @@ public class AuthSessionManager {
     }
 
     public String getAuthToken() {
-<<<<<<< feature/chat_V3
-        String rawToken = sharedPreferences.getString(KEY_AUTH_TOKEN, "");
-        String normalizedToken = normalizeAuthToken(rawToken);
-        if (!TextUtils.equals(rawToken, normalizedToken)) {
-            sharedPreferences.edit().putString(KEY_AUTH_TOKEN, normalizedToken).apply();
-        }
-        return normalizedToken;
-=======
         return normalizeAuthToken(sharedPreferences.getString(KEY_AUTH_TOKEN, ""));
->>>>>>> main
     }
 
     public String getUserId() {
@@ -131,38 +110,6 @@ public class AuthSessionManager {
             trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
         }
 
-<<<<<<< feature/chat_V3
-        String directJwt = extractJwtCandidate(trimmed);
-        if (!TextUtils.isEmpty(directJwt)) {
-            return directJwt;
-        }
-
-        try {
-            // Parse JSON-like auth payloads first (e.g. {"token":"..."}) before dot checks.
-            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-                JsonElement element = new JsonParser().parse(trimmed);
-                String nestedToken = findToken(element);
-                if (!TextUtils.isEmpty(nestedToken)) {
-                    return normalizeAuthToken(nestedToken);
-                }
-            }
-
-            if (trimmed.contains(".")) {
-                return trimmed;
-            }
-
-            JsonElement element = new JsonParser().parse(trimmed);
-            String nestedToken = findToken(element);
-            if (!TextUtils.isEmpty(nestedToken)) {
-                return normalizeAuthToken(nestedToken);
-            }
-
-            String fallbackJwt = extractJwtCandidate(trimmed);
-            return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
-        } catch (Exception ignored) {
-            String fallbackJwt = extractJwtCandidate(trimmed);
-            return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
-=======
         if (trimmed.contains(".")) {
             return trimmed;
         }
@@ -172,7 +119,6 @@ public class AuthSessionManager {
             return findToken(element);
         } catch (Exception ignored) {
             return trimmed;
->>>>>>> main
         }
     }
 
@@ -217,22 +163,6 @@ public class AuthSessionManager {
 
         return "";
     }
-<<<<<<< feature/chat_V3
-
-    private String extractJwtCandidate(String input) {
-        if (TextUtils.isEmpty(input)) {
-            return "";
-        }
-
-        Matcher matcher = JWT_PATTERN.matcher(input.trim());
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-
-        return "";
-    }
-=======
->>>>>>> main
 }
 
 
