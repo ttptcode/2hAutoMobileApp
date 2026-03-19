@@ -217,6 +217,11 @@ public class ChatRepository {
     }
 
     private <T> String resolveErrorMessage(Response<ApiResponse<T>> response, String fallback) {
+        int statusCode = response.code();
+        if (statusCode == 401 || statusCode == 403) {
+            return "Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.";
+        }
+
         try {
             if (response.body() != null && !TextUtils.isEmpty(response.body().getMessage())) {
                 return response.body().getMessage();

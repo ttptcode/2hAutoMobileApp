@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -28,6 +29,7 @@ import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.Item;
 import com.example.a2hauto.model.Listing;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.JsonElement;
 
@@ -63,6 +65,8 @@ public class DetailActivity extends AppCompatActivity implements
     private TextView tvDetailSpecsRight;
     private TextView tvRelatedEmpty;
     private ProgressBar progressRelated;
+    private MaterialButton btnDetailChat;
+    private MaterialButton btnDetailContact;
     private boolean isFavorite = false;
     private boolean isFavoriteRequestInFlight = false;
 
@@ -135,6 +139,7 @@ public class DetailActivity extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
         refreshAuthHeaderUi();
+        updateDetailActionButtonsVisibility();
     }
 
     private void bindHeaderViews() {
@@ -148,22 +153,30 @@ public class DetailActivity extends AppCompatActivity implements
         findViewById(R.id.btnDetailBackSmall).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> onFavoriteClicked());
-        findViewById(R.id.btnDetailChat).setOnClickListener(v -> openChatFromDetail());
+        btnDetailChat = findViewById(R.id.btnDetailChat);
+        btnDetailContact = findViewById(R.id.btnDetailContact);
+        btnDetailChat.setOnClickListener(v -> openChatFromDetail());
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        updateDetailActionButtonsVisibility();
     }
 
     private void openChatFromDetail() {
-        if (!authSessionManager.isLoggedIn()) {
+        if (!chatRepository.isLoggedIn()) {
             showLoginDialog();
             return;
         }
 
         String listingId = currentListing == null ? "" : currentListing.getListingId();
         String buyerId = authSessionManager.getUserId();
+        String sellerId = currentListing == null ? "" : currentListing.getUserId();
         if (TextUtils.isEmpty(listingId) || TextUtils.isEmpty(buyerId)) {
             Toast.makeText(this, R.string.chat_open_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!TextUtils.isEmpty(sellerId) && TextUtils.equals(sellerId, buyerId)) {
             return;
         }
 
@@ -182,6 +195,30 @@ public class DetailActivity extends AppCompatActivity implements
                 Toast.makeText(DetailActivity.this, message, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void updateDetailActionButtonsVisibility() {
+        if (btnDetailChat == null || btnDetailContact == null || currentListing == null) {
+            return;
+        }
+
+        String currentUserId = authSessionManager == null ? "" : authSessionManager.getUserId();
+        String sellerId = currentListing.getUserId();
+        boolean isOwnerViewingOwnPost = !TextUtils.isEmpty(currentUserId)
+                && !TextUtils.isEmpty(sellerId)
+                && TextUtils.equals(currentUserId, sellerId);
+
+        btnDetailChat.setVisibility(isOwnerViewingOwnPost ? View.GONE : View.VISIBLE);
+
+        ViewGroup.LayoutParams baseParams = btnDetailContact.getLayoutParams();
+        if (!(baseParams instanceof LinearLayout.LayoutParams)) {
+            return;
+        }
+
+        LinearLayout.LayoutParams contactParams = (LinearLayout.LayoutParams) baseParams;
+        int defaultSpacing = (int) (8 * getResources().getDisplayMetrics().density);
+        contactParams.setMarginStart(isOwnerViewingOwnPost ? 0 : defaultSpacing);
+        btnDetailContact.setLayoutParams(contactParams);
     }
 
     private void fetchInitialFavoriteState() {

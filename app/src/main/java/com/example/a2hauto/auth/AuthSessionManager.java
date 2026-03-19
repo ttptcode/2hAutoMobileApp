@@ -9,6 +9,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class AuthSessionManager {
 
     private static final String PREFS_NAME = "a2h_auto_auth";
@@ -18,6 +21,7 @@ public class AuthSessionManager {
     private static final String KEY_AUTH_TOKEN = "auth_token";
     private static final String KEY_PENDING_FULL_NAME = "pending_full_name";
     private static final String KEY_PENDING_PHONE = "pending_phone";
+    private static final Pattern JWT_PATTERN = Pattern.compile("([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)");
 
     private final SharedPreferences sharedPreferences;
     private final Context appContext;
@@ -116,6 +120,11 @@ public class AuthSessionManager {
             trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
         }
 
+        String directJwt = extractJwtCandidate(trimmed);
+        if (!TextUtils.isEmpty(directJwt)) {
+            return directJwt;
+        }
+
         try {
             // Parse JSON-like auth payloads first (e.g. {"token":"..."}) before dot checks.
             if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
@@ -132,9 +141,15 @@ public class AuthSessionManager {
 
             JsonElement element = new JsonParser().parse(trimmed);
             String nestedToken = findToken(element);
-            return TextUtils.isEmpty(nestedToken) ? trimmed : normalizeAuthToken(nestedToken);
+            if (!TextUtils.isEmpty(nestedToken)) {
+                return normalizeAuthToken(nestedToken);
+            }
+
+            String fallbackJwt = extractJwtCandidate(trimmed);
+            return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
         } catch (Exception ignored) {
-            return trimmed;
+            String fallbackJwt = extractJwtCandidate(trimmed);
+            return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
         }
     }
 
@@ -175,6 +190,19 @@ public class AuthSessionManager {
             if (!TextUtils.isEmpty(value)) {
                 return value;
             }
+        }
+
+        return "";
+    }
+
+    private String extractJwtCandidate(String input) {
+        if (TextUtils.isEmpty(input)) {
+            return "";
+        }
+
+        Matcher matcher = JWT_PATTERN.matcher(input.trim());
+        if (matcher.find()) {
+            return matcher.group(1);
         }
 
         return "";

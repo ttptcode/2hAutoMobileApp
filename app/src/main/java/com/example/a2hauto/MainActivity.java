@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     }
 
     private void openChatScreen() {
-        if (!authSessionManager.isLoggedIn()) {
+        if (!chatRepository.isLoggedIn()) {
             showLoginDialog();
             return;
         }

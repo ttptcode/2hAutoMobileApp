@@ -16,6 +16,8 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -23,6 +25,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class AuthRepository {
+
+    private static final Pattern JWT_PATTERN = Pattern.compile("([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)");
 
     public interface AuthCallback {
         void onSuccess(String token, String message);
@@ -120,11 +124,76 @@ public class AuthRepository {
             return "";
         }
 
+        String nestedToken = extractTokenCandidate(data);
+        if (!TextUtils.isEmpty(nestedToken)) {
+            return nestedToken;
+        }
+
         if (data.isJsonPrimitive()) {
             return data.getAsString();
         }
 
         return data.toString();
+    }
+
+    private String extractTokenCandidate(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return "";
+        }
+
+        if (element.isJsonPrimitive()) {
+            return extractJwtFromString(element.getAsString());
+        }
+
+        if (element.isJsonArray()) {
+            for (JsonElement child : element.getAsJsonArray()) {
+                String candidate = extractTokenCandidate(child);
+                if (!TextUtils.isEmpty(candidate)) {
+                    return candidate;
+                }
+            }
+            return "";
+        }
+
+        if (!element.isJsonObject()) {
+            return "";
+        }
+
+        JsonObject object = element.getAsJsonObject();
+        String[] preferredKeys = new String[]{"token", "accessToken", "access_token", "jwt", "jwtToken"};
+        for (String key : preferredKeys) {
+            if (object.has(key) && !object.get(key).isJsonNull()) {
+                String candidate = extractTokenCandidate(object.get(key));
+                if (!TextUtils.isEmpty(candidate)) {
+                    return candidate;
+                }
+            }
+        }
+
+        for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+            String candidate = extractTokenCandidate(entry.getValue());
+            if (!TextUtils.isEmpty(candidate)) {
+                return candidate;
+            }
+        }
+
+        return "";
+    }
+
+    private String extractJwtFromString(String raw) {
+        if (TextUtils.isEmpty(raw)) {
+            return "";
+        }
+        String value = raw.trim();
+        if (value.toLowerCase().startsWith("bearer ")) {
+            value = value.substring(7).trim();
+        }
+
+        Matcher matcher = JWT_PATTERN.matcher(value);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
     }
 
     private String getFailureMessage(Throwable throwable) {

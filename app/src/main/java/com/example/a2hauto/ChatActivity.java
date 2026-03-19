@@ -30,6 +30,7 @@ import com.example.a2hauto.chat.ChatRepository;
 import com.example.a2hauto.model.Conversation;
 import com.example.a2hauto.model.Message;
 import com.example.a2hauto.model.UserBrief;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private static final long POLLING_INTERVAL_MS = 7000L;
     public static final String EXTRA_OPEN_CONVERSATION_ID = "extra_open_conversation_id";
+    public static final String EXTRA_OPEN_CONVERSATION_JSON = "extra_open_conversation_json";
 
     private View chatListContainer;
     private View chatMessageContainer;
@@ -66,6 +68,7 @@ public class ChatActivity extends AppCompatActivity {
     private String currentUserId;
     private Conversation activeConversation;
     private String pendingOpenConversationId;
+    private Conversation pendingOpenConversationSeed;
     private final List<Conversation> allConversations = new ArrayList<>();
     private final Map<String, String> draftByConversationId = new HashMap<>();
     private final Map<String, ArrayList<Uri>> mediaDraftByConversationId = new HashMap<>();
@@ -95,6 +98,7 @@ public class ChatActivity extends AppCompatActivity {
         chatRepository = new ChatRepository(ApiClient.getApiService(), new AuthSessionManager(this));
         currentUserId = chatRepository.getCurrentUserId();
         pendingOpenConversationId = getIntent().getStringExtra(EXTRA_OPEN_CONVERSATION_ID);
+        pendingOpenConversationSeed = parseConversationSeedFromIntent();
 
         if (!chatRepository.isLoggedIn()) {
             Toast.makeText(this, R.string.chat_login_required, Toast.LENGTH_SHORT).show();
@@ -108,6 +112,7 @@ public class ChatActivity extends AppCompatActivity {
         setupBackHandling();
 
         showListScreen();
+        tryOpenSeedConversation();
         refreshConversations(true);
         refreshIncomingUnread();
     }
@@ -209,8 +214,15 @@ public class ChatActivity extends AppCompatActivity {
                 if (!TextUtils.isEmpty(pendingOpenConversationId)) {
                     Conversation target = findConversationById(pendingOpenConversationId);
                     if (target != null) {
-                        openConversation(target);
+                        if (activeConversation == null
+                                || !TextUtils.equals(activeConversation.getConversationId(), target.getConversationId())) {
+                            openConversation(target);
+                        } else {
+                            activeConversation = target;
+                            bindConversationHeader(target);
+                        }
                         pendingOpenConversationId = null;
+                        pendingOpenConversationSeed = null;
                     }
                 }
 
@@ -288,6 +300,32 @@ public class ChatActivity extends AppCompatActivity {
         chatMessageContainer.setVisibility(View.VISIBLE);
 
         loadMessages(conversation.getConversationId(), true);
+    }
+
+    private void tryOpenSeedConversation() {
+        if (pendingOpenConversationSeed == null) {
+            return;
+        }
+
+        if (TextUtils.isEmpty(pendingOpenConversationSeed.getConversationId())) {
+            pendingOpenConversationSeed = null;
+            return;
+        }
+
+        openConversation(pendingOpenConversationSeed);
+    }
+
+    private Conversation parseConversationSeedFromIntent() {
+        String rawJson = getIntent().getStringExtra(EXTRA_OPEN_CONVERSATION_JSON);
+        if (TextUtils.isEmpty(rawJson)) {
+            return null;
+        }
+
+        try {
+            return new Gson().fromJson(rawJson, Conversation.class);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private void bindConversationHeader(Conversation conversation) {
