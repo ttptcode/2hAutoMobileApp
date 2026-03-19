@@ -14,7 +14,6 @@
     <string name="featured_section_subtitle">Danh sách xe mới cập nhật từ hệ thống 2H Auto.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_favorites">Yêu thích</string>
-    <string name="nav_post">Bài đăng</string>
     <string name="news_title">Danh sách bài đăng</string>
     <string name="news_subtitle">Tin nhắn và bài đăng liên quan đến tài khoản của bạn.</string>
     <string name="news_open_post_count">%1$d cuộc trò chuyện</string>
