@@ -14,6 +14,7 @@
     <string name="featured_section_subtitle">Danh sách xe mới cập nhật từ hệ thống 2H Auto.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_favorites">Yêu thích</string>
+    <string name="nav_chat">Chat</string>
     <string name="nav_post">Đăng tin</string>
     <string name="nav_account">Tài khoản</string>
     <string name="menu">Danh mục</string>
@@ -43,6 +44,8 @@
     <string name="detail_description_fallback">Người bán chưa cập nhật mô tả chi tiết cho sản phẩm này.</string>
     <string name="detail_seller_and_address">Người đăng: %1$s
 Địa chỉ: %2$s</string>
+    <string name="detail_chat_button">Chat</string>
+    <string name="detail_contact_button">Liên hệ: 0901 234 567</string>
     <string name="detail_address_fallback">Liên hệ người bán để biết thêm</string>
     <string name="detail_specs_fallback">Sản phẩm này đang được cập nhật thêm thông số.</string>
     <string name="detail_spec_item_type">Loại xe</string>

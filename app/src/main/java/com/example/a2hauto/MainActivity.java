@@ -109,11 +109,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         syncFavoritesFromServer();
     }
 
-    private void setupActions() {
+       private void setupActions() {
         findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
-        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> openFavoritesScreen());
+        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
         findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showCategoryMenuDialog());
-        findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> openFavoritesScreen());
+        findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
         findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
@@ -121,10 +121,12 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         tvMiniHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         findViewById(R.id.navHome).setOnClickListener(v -> rvVehicles.smoothScrollToPosition(0));
-        findViewById(R.id.navFavorites).setOnClickListener(v -> openFavoritesScreen());
+        findViewById(R.id.navFavorites).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        findViewById(R.id.navChat).setOnClickListener(v -> showComingSoon(getString(R.string.nav_chat)));
         findViewById(R.id.navPost).setOnClickListener(v -> handlePostAction());
         findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
     }
+
 
     @Override
     protected void onResume() {

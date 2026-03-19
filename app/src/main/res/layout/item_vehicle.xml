@@ -66,6 +66,20 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Đang mở bán" />
 
+        <ImageButton
+            android:id="@+id/btnFavorite"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_favorite_button"
+            android:contentDescription="@string/favorite_add"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:padding="7dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_favorite_heart_outline"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/favorite_tint" />
+
         <TextView
             android:id="@+id/tvName"
             android:layout_width="0dp"

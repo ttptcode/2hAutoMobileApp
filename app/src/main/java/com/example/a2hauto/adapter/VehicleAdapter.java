@@ -246,13 +246,11 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
     }
 
     private void bindFavoriteState(VehicleViewHolder holder, boolean isFavorite) {
-        holder.cbSelectFavorite.setVisibility(View.GONE);
-        holder.ivFavoriteBadge.setVisibility(View.VISIBLE);
-        holder.ivFavoriteBadge.setSelected(isFavorite);
-        holder.ivFavoriteBadge.setImageResource(isFavorite
-            ? R.drawable.ic_heart_filled
-            : R.drawable.ic_heart_outline);
-        holder.ivFavoriteBadge.setContentDescription(holder.itemView.getContext().getString(
+        holder.btnFavorite.setSelected(isFavorite);
+        holder.btnFavorite.setImageResource(isFavorite
+                ? R.drawable.ic_favorite_heart_filled
+                : R.drawable.ic_favorite_heart_outline);
+        holder.btnFavorite.setContentDescription(holder.itemView.getContext().getString(
                 isFavorite ? R.string.favorite_remove : R.string.favorite_add));
     }
 
