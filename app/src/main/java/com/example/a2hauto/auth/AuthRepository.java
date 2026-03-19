@@ -125,10 +125,31 @@ public class AuthRepository {
         }
 
         // Nếu data là JSON object, tìm field "token"
+//         if (data.isJsonObject()) {
+//             JsonObject jsonObject = data.getAsJsonObject();
+//             if (jsonObject.has("token") && !jsonObject.get("token").isJsonNull()) {
+//                 return jsonObject.get("token").getAsString();
         if (data.isJsonObject()) {
-            JsonObject jsonObject = data.getAsJsonObject();
-            if (jsonObject.has("token") && !jsonObject.get("token").isJsonNull()) {
-                return jsonObject.get("token").getAsString();
+            JsonObject object = data.getAsJsonObject();
+            String[] tokenKeys = new String[] {
+                    "token",
+                    "accessToken",
+                    "access_token",
+                    "jwt",
+                    "jwtToken"
+            };
+
+            for (String key : tokenKeys) {
+                if (object.has(key) && !object.get(key).isJsonNull()) {
+                    try {
+                        String token = object.get(key).getAsString();
+                        if (!TextUtils.isEmpty(token)) {
+                            return token;
+                        }
+                    } catch (Exception ignored) {
+                        // Continue trying other known keys.
+                    }
+                }
             }
         }
 

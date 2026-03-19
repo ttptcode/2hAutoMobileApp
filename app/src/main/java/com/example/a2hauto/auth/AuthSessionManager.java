@@ -5,6 +5,9 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.example.a2hauto.R;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class AuthSessionManager {
 
@@ -35,7 +38,7 @@ public class AuthSessionManager {
         sharedPreferences.edit()
                 .putString(KEY_FULL_NAME, sanitizedName)
                 .putString(KEY_PHONE, normalizedPhone)
-                .putString(KEY_AUTH_TOKEN, authToken == null ? "" : authToken)
+                .putString(KEY_AUTH_TOKEN, normalizeAuthToken(authToken))
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .putBoolean(KEY_IS_LOGGED_IN, true)
@@ -71,7 +74,7 @@ public class AuthSessionManager {
     }
 
     public String getAuthToken() {
-        return sharedPreferences.getString(KEY_AUTH_TOKEN, "");
+        return normalizeAuthToken(sharedPreferences.getString(KEY_AUTH_TOKEN, ""));
     }
 
     public String getUserId() {
@@ -91,6 +94,74 @@ public class AuthSessionManager {
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .apply();
+    }
+
+    private String normalizeAuthToken(String rawToken) {
+        if (TextUtils.isEmpty(rawToken)) {
+            return "";
+        }
+
+        String trimmed = rawToken.trim();
+        if (trimmed.toLowerCase().startsWith("bearer ")) {
+            trimmed = trimmed.substring(7).trim();
+        }
+
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+
+        if (trimmed.contains(".")) {
+            return trimmed;
+        }
+
+        try {
+            JsonElement element = new JsonParser().parse(trimmed);
+            return findToken(element);
+        } catch (Exception ignored) {
+            return trimmed;
+        }
+    }
+
+    private String findToken(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return "";
+        }
+
+        if (element.isJsonPrimitive()) {
+            String value = element.getAsString();
+            return value == null ? "" : value.trim();
+        }
+
+        if (!element.isJsonObject()) {
+            return "";
+        }
+
+        JsonObject object = element.getAsJsonObject();
+        String[] tokenKeys = new String[] {
+                "token",
+                "accessToken",
+                "access_token",
+                "jwt",
+                "jwtToken"
+        };
+
+        for (String key : tokenKeys) {
+            if (object.has(key) && !object.get(key).isJsonNull()) {
+                String value = findToken(object.get(key));
+                if (!TextUtils.isEmpty(value)) {
+                    return value;
+                }
+            }
+        }
+
+        if (object.has("data") && !object.get("data").isJsonNull()) {
+            String value = findToken(object.get("data"));
+            if (!TextUtils.isEmpty(value)) {
+                return value;
+            }
+        }
+
+        return "";
     }
 }
 
