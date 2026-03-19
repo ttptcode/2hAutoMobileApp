@@ -307,28 +307,58 @@ public class CreateElectricBikePostActivity extends AppCompatActivity {
         if (selectedVideoUri != null) {
             videoPart = prepareFilePart("Video", selectedVideoUri);
         }
+        final MultipartBody.Part finalVideoPart = videoPart;
 
-        apiService.createListing(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    String listingId = response.body().getData().getListingId();
-                    if (isDraft) {
-                        finishSuccess("Đã lưu bản nháp xe điện thành công!");
+        if (isDraft) {
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp xe điện thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
                     } else {
-                        activateListing(listingId);
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateElectricBikePostActivity.this, response);
                     }
-                } else {
-                    resetButtons();
-                    ErrorHandler.handleErrorResponse(CreateElectricBikePostActivity.this, response);
                 }
-            }
 
-            @Override
-            public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
-                resetButtons();
-                ErrorHandler.handleNetworkError(CreateElectricBikePostActivity.this, t);
-            }
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreateElectricBikePostActivity.this, t);
+                }
+            });
+            return;
+        }
+
+        PackageSelectionBottomSheet.show(this, packageId -> {
+            fields.put("FeeCommissionId", createPartFromString(packageId));
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp xe điện thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateElectricBikePostActivity.this, response);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreateElectricBikePostActivity.this, t);
+                }
+            });
         });
     }
 

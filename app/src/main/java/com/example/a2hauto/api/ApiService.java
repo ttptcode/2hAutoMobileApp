@@ -3,6 +3,7 @@ package com.example.a2hauto.api;
 import com.example.a2hauto.model.auth.LoginRequest;
 import com.example.a2hauto.model.auth.RegisterRequest;
 import com.example.a2hauto.model.FeeCommissionResponse;
+import com.example.a2hauto.model.FeeCommission;
 import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
 import com.example.a2hauto.model.UserProfileResponse;
@@ -74,6 +75,9 @@ public interface ApiService {
 
     @POST("api/Favorites/toggle")
     Call<ApiResponse<JsonElement>> toggleFavorite(@Body ToggleFavoriteRequest request);
+
+        @GET("api/UserPackages")
+        Call<ApiResponse<List<FeeCommission>>> getUserPackages(@Header("Authorization") String token);
 
     @GET("api/Users/{id}")
     Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
