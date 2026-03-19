@@ -2,17 +2,12 @@ package com.example.a2hauto;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-<<<<<<< Updated upstream
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-=======
-import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.RatingBar;
->>>>>>> Stashed changes
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,49 +16,33 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-<<<<<<< Updated upstream
+import com.example.a2hauto.adapter.ReviewAdapter;
 import com.example.a2hauto.adapter.VehicleAdapter;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.auth.JwtUtils;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
-import com.example.a2hauto.model.ApiResponse;
-import com.example.a2hauto.model.Item;
-import com.example.a2hauto.model.Listing;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-=======
-import com.example.a2hauto.adapter.ReviewAdapter;
-import com.example.a2hauto.api.ApiClient;
-import com.example.a2hauto.api.ApiService;
-import com.example.a2hauto.auth.AuthSessionManager;
-import com.example.a2hauto.auth.JwtUtils;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.CreateReviewRequest;
 import com.example.a2hauto.model.Item;
 import com.example.a2hauto.model.Listing;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
->>>>>>> Stashed changes
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.io.IOException;
 
 import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -75,8 +54,6 @@ public class DetailActivity extends AppCompatActivity implements
     private static final int SINGLE_COLUMN_BREAKPOINT_DP = 360;
 
     private ApiService apiService;
-    private VehicleAdapter relatedAdapter;
-    private Listing currentListing;
     private AuthSessionManager authSessionManager;
 
     private View btnHeaderUpgrade;
@@ -87,9 +64,7 @@ public class DetailActivity extends AppCompatActivity implements
     private TextView tvDetailSpecsRight;
     private TextView tvRelatedEmpty;
     private ProgressBar progressRelated;
-
-    private ApiService apiService;
-    private AuthSessionManager authSessionManager;
+    private VehicleAdapter relatedAdapter;
 
     private RecyclerView rvReviews;
     private ProgressBar progressReviews;
@@ -99,9 +74,9 @@ public class DetailActivity extends AppCompatActivity implements
     private RatingBar ratingBarReview;
     private TextInputEditText etReviewComment;
     private MaterialButton btnSubmitReview;
-
     private ReviewAdapter reviewAdapter;
-    private Listing listing;
+
+    private Listing currentListing;
     private String token;
     private String currentUserId;
 
@@ -110,37 +85,41 @@ public class DetailActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
-<<<<<<< Updated upstream
         currentListing = (Listing) getIntent().getSerializableExtra("listing");
         if (currentListing == null) {
-=======
-        listing = (Listing) getIntent().getSerializableExtra("listing");
-        if (listing == null) {
->>>>>>> Stashed changes
             finish();
             return;
         }
 
-<<<<<<< Updated upstream
-        authSessionManager = new AuthSessionManager(this);
-        bindHeaderViews();
-        setupHeaderActions();
-        refreshAuthHeaderUi();
-        apiService = ApiClient.getApiService();
-        setupRelatedSection();
-=======
         apiService = ApiClient.getApiService();
         authSessionManager = new AuthSessionManager(this);
 
         token = sanitizeToken(authSessionManager.getAuthToken());
         currentUserId = JwtUtils.extractUserId(token);
->>>>>>> Stashed changes
 
+        bindHeaderViews();
+        setupHeaderActions();
+        refreshAuthHeaderUi();
+        
+        setupSpecsViews();
+        setupRelatedSection();
+        setupReviewViews();
+
+        bindListingData();
+        
+        fetchRelatedListings();
+        loadReviews();
+    }
+
+    private void setupSpecsViews() {
+        tvDetailSpecsLeft = findViewById(R.id.tvDetailSpecsLeft);
+        tvDetailSpecsRight = findViewById(R.id.tvDetailSpecsRight);
+    }
+
+    private void bindListingData() {
         ImageView ivDetail = findViewById(R.id.ivDetail);
         TextView tvDetailName = findViewById(R.id.tvDetailName);
         TextView tvDetailPrice = findViewById(R.id.tvDetailPrice);
-        tvDetailSpecsLeft = findViewById(R.id.tvDetailSpecsLeft);
-        tvDetailSpecsRight = findViewById(R.id.tvDetailSpecsRight);
         TextView tvDetailDesc = findViewById(R.id.tvDetailDesc);
         TextView tvDetailSeller = findViewById(R.id.tvDetailSeller);
 
@@ -155,35 +134,33 @@ public class DetailActivity extends AppCompatActivity implements
         String detail = currentListing.getDetail();
         tvDetailDesc.setText(!TextUtils.isEmpty(detail)
                 ? detail
-                : getString(R.string.detail_description_fallback));
+                : getString(R.string.news_empty)); // Fallback from available strings
 
         String seller = !TextUtils.isEmpty(currentListing.getUserName())
                 ? currentListing.getUserName()
                 : getString(R.string.seller_fallback);
         String address = !TextUtils.isEmpty(currentListing.getAddress())
                 ? currentListing.getAddress()
-                : getString(R.string.detail_address_fallback);
-        tvDetailSeller.setText(getString(R.string.detail_seller_and_address, seller, address));
+                : "Chưa cập nhật địa chỉ";
+        tvDetailSeller.setText(String.format("Người bán: %s\nĐịa chỉ: %s", seller, address));
 
         String imageUrl = null;
-        if (item != null) {
-            if (item.getImageUrls() != null && !item.getImageUrls().isEmpty()) {
-                imageUrl = item.getImageUrls().get(0);
-            }
+        if (item != null && item.getImageUrls() != null && !item.getImageUrls().isEmpty()) {
+            imageUrl = item.getImageUrls().get(0);
         }
 
         Glide.with(this)
                 .load(imageUrl)
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(ivDetail);
-
-        fetchRelatedListings();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshAuthHeaderUi();
+        token = sanitizeToken(authSessionManager.getAuthToken());
+        currentUserId = JwtUtils.extractUserId(token);
     }
 
     private void bindHeaderViews() {
@@ -193,12 +170,18 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void setupHeaderActions() {
-        findViewById(R.id.btnDetailBackSmall).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
-        findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
-        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
-        btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
-        btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
-        tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        View backBtn = findViewById(R.id.btnDetailBackSmall);
+        if (backBtn != null) backBtn.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        
+        View menuBtn = findViewById(R.id.btnMenu);
+        if (menuBtn != null) menuBtn.setOnClickListener(v -> showCategoryMenuDialog());
+        
+        View favBtn = findViewById(R.id.btnHeaderFavorite);
+        if (favBtn != null) favBtn.setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        
+        if (btnHeaderUpgrade != null) btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        if (btnHeaderLogin != null) btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
+        if (tvHeaderAvatar != null) tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
     }
 
     private void setupRelatedSection() {
@@ -206,38 +189,46 @@ public class DetailActivity extends AppCompatActivity implements
         tvRelatedEmpty = findViewById(R.id.tvRelatedEmpty);
         progressRelated = findViewById(R.id.progressRelated);
 
-        rvRelatedListings.setLayoutManager(new LinearLayoutManager(this));
-        rvRelatedListings.setNestedScrollingEnabled(false);
-        relatedAdapter = new VehicleAdapter(new ArrayList<>());
-        rvRelatedListings.setAdapter(relatedAdapter);
+        if (rvRelatedListings != null) {
+            rvRelatedListings.setLayoutManager(new LinearLayoutManager(this));
+            rvRelatedListings.setNestedScrollingEnabled(false);
+            relatedAdapter = new VehicleAdapter(new ArrayList<>());
+            rvRelatedListings.setAdapter(relatedAdapter);
+        }
     }
 
     private void bindSpecs(Item item) {
+        if (tvDetailSpecsLeft == null) return;
+
         List<String> specRows = new ArrayList<>();
-        appendSpec(specRows, getString(R.string.detail_spec_item_type), item != null ? item.getItemTypeName() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_brand), item != null ? item.getBrand() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_model), item != null ? item.getModel() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_year), item != null && item.getYear() != null ? String.valueOf(item.getYear()) : null);
-        appendSpec(specRows, getString(R.string.detail_spec_condition), item != null ? item.getCondition() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_mileage), item != null ? item.getMileage() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_fuel), item != null ? item.getFuel() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_gearbox), item != null ? item.getGearbox() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_color), item != null ? item.getColor() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_seat), item != null ? item.getSeat() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_origin), item != null ? item.getOrigin() : null);
-        appendSpec(specRows, getString(R.string.detail_spec_plate), item != null ? item.getLicensePlate() : null);
+        appendSpec(specRows, "Loại", item != null ? item.getItemTypeName() : null);
+        appendSpec(specRows, "Thương hiệu", item != null ? item.getBrand() : null);
+        appendSpec(specRows, "Mẫu xe", item != null ? item.getModel() : null);
+        appendSpec(specRows, "Năm", item != null && item.getYear() != null ? String.valueOf(item.getYear()) : null);
+        appendSpec(specRows, "Tình trạng", item != null ? item.getCondition() : null);
+        appendSpec(specRows, "Odo", item != null ? item.getMileage() : null);
+        appendSpec(specRows, "Nhiên liệu", item != null ? item.getFuel() : null);
+        appendSpec(specRows, "Hộp số", item != null ? item.getGearbox() : null);
+        appendSpec(specRows, "Màu sắc", item != null ? item.getColor() : null);
+        appendSpec(specRows, "Chỗ ngồi", item != null ? item.getSeat() : null);
+        appendSpec(specRows, "Xuất xứ", item != null ? item.getOrigin() : null);
+        appendSpec(specRows, "Biển số", item != null ? item.getLicensePlate() : null);
 
         if (specRows.isEmpty()) {
-            tvDetailSpecsLeft.setText(getString(R.string.detail_specs_fallback));
-            tvDetailSpecsRight.setText("");
-            tvDetailSpecsRight.setVisibility(View.GONE);
+            tvDetailSpecsLeft.setText("Không có thông số kỹ thuật.");
+            if (tvDetailSpecsRight != null) {
+                tvDetailSpecsRight.setText("");
+                tvDetailSpecsRight.setVisibility(View.GONE);
+            }
             return;
         }
 
-        if (shouldUseSingleColumnSpecs()) {
+        if (shouldUseSingleColumnSpecs() || tvDetailSpecsRight == null) {
             tvDetailSpecsLeft.setText(TextUtils.join("\n", specRows));
-            tvDetailSpecsRight.setText("");
-            tvDetailSpecsRight.setVisibility(View.GONE);
+            if (tvDetailSpecsRight != null) {
+                tvDetailSpecsRight.setText("");
+                tvDetailSpecsRight.setVisibility(View.GONE);
+            }
             return;
         }
 
@@ -252,19 +243,16 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void appendSpec(List<String> specs, String label, String value) {
-        if (TextUtils.isEmpty(value)) {
-            return;
-        }
-
+        if (TextUtils.isEmpty(value)) return;
         specs.add("- " + label + ": " + value);
     }
 
     private void handleAccountAction() {
         if (authSessionManager.isLoggedIn()) {
             showAccountDialog();
-            return;
+        } else {
+            showLoginDialog();
         }
-        showLoginDialog();
     }
 
     private void showLoginDialog() {
@@ -292,7 +280,10 @@ public class DetailActivity extends AppCompatActivity implements
                 .setPositiveButton(R.string.action_logout, (dialog, which) -> {
                     authSessionManager.logout();
                     refreshAuthHeaderUi();
+                    token = "";
+                    currentUserId = "";
                     Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
+                    loadReviews(); // Refresh review UI to show login hint
                 })
                 .show();
     }
@@ -331,9 +322,7 @@ public class DetailActivity extends AppCompatActivity implements
             tvTitle.setText(item.title);
             optionView.setOnClickListener(v -> {
                 showComingSoon(item.title);
-                if (menuDialogRef[0] != null) {
-                    menuDialogRef[0].dismiss();
-                }
+                if (menuDialogRef[0] != null) menuDialogRef[0].dismiss();
             });
             optionContainer.addView(optionView);
         }
@@ -349,9 +338,11 @@ public class DetailActivity extends AppCompatActivity implements
         boolean isLoggedIn = authSessionManager.isLoggedIn();
         String initials = getAvatarInitials(authSessionManager.getDisplayName(), authSessionManager.getPhoneNumber());
 
-        btnHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
-        tvHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
-        tvHeaderAvatar.setText(initials);
+        if (btnHeaderLogin != null) btnHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        if (tvHeaderAvatar != null) {
+            tvHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
+            tvHeaderAvatar.setText(initials);
+        }
     }
 
     private String getAvatarInitials(String displayName, String phoneNumber) {
@@ -378,30 +369,29 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void fetchRelatedListings() {
-        progressRelated.setVisibility(ProgressBar.VISIBLE);
-        tvRelatedEmpty.setVisibility(TextView.GONE);
+        if (progressRelated != null) progressRelated.setVisibility(ProgressBar.VISIBLE);
+        if (tvRelatedEmpty != null) tvRelatedEmpty.setVisibility(TextView.GONE);
 
         apiService.getListings().enqueue(new Callback<ApiResponse<List<Listing>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Listing>>> call, Response<ApiResponse<List<Listing>>> response) {
-                progressRelated.setVisibility(ProgressBar.GONE);
+                if (progressRelated != null) progressRelated.setVisibility(ProgressBar.GONE);
 
-                if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess() || response.body().getData() == null) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess() && response.body().getData() != null) {
+                    List<Listing> filtered = buildRelatedListings(response.body().getData());
+                    if (relatedAdapter != null) relatedAdapter.setListings(filtered);
+                    if (tvRelatedEmpty != null) tvRelatedEmpty.setVisibility(filtered.isEmpty() ? TextView.VISIBLE : TextView.GONE);
+                } else {
                     showRelatedEmpty();
-                    return;
                 }
-
-                List<Listing> filtered = buildRelatedListings(response.body().getData());
-                relatedAdapter.setListings(filtered);
-                tvRelatedEmpty.setVisibility(filtered.isEmpty() ? TextView.VISIBLE : TextView.GONE);
             }
 
             @Override
             public void onFailure(Call<ApiResponse<List<Listing>>> call, Throwable t) {
-                progressRelated.setVisibility(ProgressBar.GONE);
+                if (progressRelated != null) progressRelated.setVisibility(ProgressBar.GONE);
                 showRelatedEmpty();
-        setupReviewViews();
-        loadReviews();
+            }
+        });
     }
 
     private void setupReviewViews() {
@@ -414,70 +404,77 @@ public class DetailActivity extends AppCompatActivity implements
         etReviewComment = findViewById(R.id.etReviewComment);
         btnSubmitReview = findViewById(R.id.btnSubmitReview);
 
-        rvReviews.setLayoutManager(new LinearLayoutManager(this));
-        reviewAdapter = new ReviewAdapter(new ArrayList<>());
-        rvReviews.setAdapter(reviewAdapter);
+        if (rvReviews != null) {
+            rvReviews.setLayoutManager(new LinearLayoutManager(this));
+            reviewAdapter = new ReviewAdapter(new ArrayList<>());
+            rvReviews.setAdapter(reviewAdapter);
+        }
 
-        tvRatingValue.setText(getString(R.string.review_rating_selected, (int) ratingBarReview.getRating()));
-        ratingBarReview.setOnRatingBarChangeListener((ratingBar, rating, fromUser) ->
-                tvRatingValue.setText(getString(R.string.review_rating_selected, (int) rating)));
+        if (ratingBarReview != null && tvRatingValue != null) {
+            tvRatingValue.setText(getString(R.string.review_rating_selected, (int) ratingBarReview.getRating()));
+            ratingBarReview.setOnRatingBarChangeListener((ratingBar, rating, fromUser) ->
+                    tvRatingValue.setText(getString(R.string.review_rating_selected, (int) rating)));
+        }
 
-        if (!authSessionManager.isLoggedIn() || TextUtils.isEmpty(token) || TextUtils.isEmpty(currentUserId)) {
-            btnSubmitReview.setEnabled(false);
-            etReviewComment.setEnabled(false);
+        updateReviewInputUi();
+    }
+
+    private void updateReviewInputUi() {
+        if (btnSubmitReview == null || etReviewComment == null) return;
+
+        boolean canReview = authSessionManager.isLoggedIn() && !TextUtils.isEmpty(token) && !TextUtils.isEmpty(currentUserId);
+        btnSubmitReview.setEnabled(canReview);
+        etReviewComment.setEnabled(canReview);
+        
+        if (!canReview) {
             etReviewComment.setHint(R.string.review_login_to_comment);
+            btnSubmitReview.setOnClickListener(v -> showLoginDialog()); // Allow clicking to open login
         } else {
+            etReviewComment.setHint(R.string.review_input_hint);
             btnSubmitReview.setOnClickListener(view -> submitReview());
         }
     }
 
     private void loadReviews() {
-        String listingId = listing.getListingId();
+        String listingId = currentListing.getListingId();
         if (TextUtils.isEmpty(listingId)) {
             showReviewEmpty(getString(R.string.review_listing_id_missing));
             return;
         }
 
-        if (TextUtils.isEmpty(token)) {
-            reviewAdapter.setData(new ArrayList<>());
-            updateReviewSummary(new ArrayList<>());
-            showReviewEmpty(getString(R.string.review_login_required));
-            return;
-        }
+        updateReviewInputUi();
 
-        progressReviews.setVisibility(android.view.View.VISIBLE);
-        tvReviewEmpty.setVisibility(android.view.View.GONE);
+        if (progressReviews != null) progressReviews.setVisibility(android.view.View.VISIBLE);
+        if (tvReviewEmpty != null) tvReviewEmpty.setVisibility(android.view.View.GONE);
 
-        String authorization = "Bearer " + token;
+        String authorization = TextUtils.isEmpty(token) ? null : "Bearer " + token;
         apiService.getReviewsByListingId(authorization, listingId).enqueue(new Callback<ApiResponse<List<JsonElement>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<JsonElement>>> call, Response<ApiResponse<List<JsonElement>>> response) {
-                progressReviews.setVisibility(android.view.View.GONE);
+                if (progressReviews != null) progressReviews.setVisibility(android.view.View.GONE);
 
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     List<JsonElement> reviews = response.body().getData();
-                    if (reviews == null) {
-                        reviews = new ArrayList<>();
-                    }
-                    reviewAdapter.setData(reviews);
+                    if (reviews == null) reviews = new ArrayList<>();
+                    if (reviewAdapter != null) reviewAdapter.setData(reviews);
                     updateReviewSummary(reviews);
                     if (reviews.isEmpty()) {
                         showReviewEmpty(getString(R.string.review_empty));
-                    } else {
+                    } else if (tvReviewEmpty != null) {
                         tvReviewEmpty.setVisibility(android.view.View.GONE);
                     }
                     return;
                 }
 
-                reviewAdapter.setData(new ArrayList<>());
+                if (reviewAdapter != null) reviewAdapter.setData(new ArrayList<>());
                 updateReviewSummary(new ArrayList<>());
-                showReviewEmpty(resolveReviewError(response));
+                showReviewEmpty(extractResponseErrorMessage(response, getString(R.string.review_load_failed)));
             }
 
             @Override
             public void onFailure(Call<ApiResponse<List<JsonElement>>> call, Throwable throwable) {
-                progressReviews.setVisibility(android.view.View.GONE);
-                reviewAdapter.setData(new ArrayList<>());
+                if (progressReviews != null) progressReviews.setVisibility(android.view.View.GONE);
+                if (reviewAdapter != null) reviewAdapter.setData(new ArrayList<>());
                 updateReviewSummary(new ArrayList<>());
                 showReviewEmpty(getString(R.string.review_load_failed));
             }
@@ -485,33 +482,21 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void showRelatedEmpty() {
-        relatedAdapter.setListings(Collections.emptyList());
-        tvRelatedEmpty.setVisibility(TextView.VISIBLE);
+        if (relatedAdapter != null) relatedAdapter.setListings(Collections.emptyList());
+        if (tvRelatedEmpty != null) tvRelatedEmpty.setVisibility(TextView.VISIBLE);
     }
 
     private List<Listing> buildRelatedListings(List<Listing> allListings) {
         List<Listing> candidates = new ArrayList<>();
         for (Listing listing : allListings) {
-            if (listing == null) {
-                continue;
-            }
-
-            if (!"Active".equalsIgnoreCase(listing.getStatus())) {
-                continue;
-            }
-
-            if (!TextUtils.isEmpty(currentListing.getListingId())
-                    && currentListing.getListingId().equals(listing.getListingId())) {
-                continue;
-            }
+            if (listing == null) continue;
+            if (!"Active".equalsIgnoreCase(listing.getStatus())) continue;
+            if (!TextUtils.isEmpty(currentListing.getListingId()) && currentListing.getListingId().equals(listing.getListingId())) continue;
             candidates.add(listing);
         }
 
         candidates.sort(Comparator.comparingInt(this::relatedScore).reversed());
-        if (candidates.size() > 6) {
-            return new ArrayList<>(candidates.subList(0, 6));
-        }
-        return candidates;
+        return candidates.size() > 6 ? new ArrayList<>(candidates.subList(0, 6)) : candidates;
     }
 
     private int relatedScore(Listing candidate) {
@@ -520,14 +505,8 @@ public class DetailActivity extends AppCompatActivity implements
         Item candidateItem = candidate.getItem();
 
         if (currentItem != null && candidateItem != null) {
-            if (!TextUtils.isEmpty(currentItem.getItemTypeName())
-                    && currentItem.getItemTypeName().equalsIgnoreCase(candidateItem.getItemTypeName())) {
-                score += 2;
-            }
-            if (!TextUtils.isEmpty(currentItem.getBrand())
-                    && currentItem.getBrand().equalsIgnoreCase(candidateItem.getBrand())) {
-                score += 1;
-            }
+            if (!TextUtils.isEmpty(currentItem.getItemTypeName()) && currentItem.getItemTypeName().equalsIgnoreCase(candidateItem.getItemTypeName())) score += 2;
+            if (!TextUtils.isEmpty(currentItem.getBrand()) && currentItem.getBrand().equalsIgnoreCase(candidateItem.getBrand())) score += 1;
         }
         return score;
     }
@@ -535,6 +514,9 @@ public class DetailActivity extends AppCompatActivity implements
     @Override
     public void onLoginSuccess(String displayName) {
         refreshAuthHeaderUi();
+        token = sanitizeToken(authSessionManager.getAuthToken());
+        currentUserId = JwtUtils.extractUserId(token);
+        loadReviews();
     }
 
     @Override
@@ -545,6 +527,9 @@ public class DetailActivity extends AppCompatActivity implements
     @Override
     public void onRegisterSuccess(String displayName) {
         refreshAuthHeaderUi();
+        token = sanitizeToken(authSessionManager.getAuthToken());
+        currentUserId = JwtUtils.extractUserId(token);
+        loadReviews();
     }
 
     @Override
@@ -555,18 +540,19 @@ public class DetailActivity extends AppCompatActivity implements
     private static class CategoryMenuItem {
         private final String title;
         private final int iconResId;
-
         private CategoryMenuItem(String title, int iconResId) {
             this.title = title;
             this.iconResId = iconResId;
         }
+    }
+
     private void submitReview() {
         if (!authSessionManager.isLoggedIn()) {
             Toast.makeText(this, R.string.review_login_required, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String revieweeId = listing.getUserId();
+        String revieweeId = currentListing.getUserId();
         if (TextUtils.isEmpty(revieweeId)) {
             Toast.makeText(this, R.string.review_reviewee_missing, Toast.LENGTH_SHORT).show();
             return;
@@ -584,13 +570,9 @@ public class DetailActivity extends AppCompatActivity implements
         }
 
         int rating = Math.max(1, Math.min(5, (int) ratingBarReview.getRating()));
-        String listingId = listing.getListingId();
+        String listingId = currentListing.getListingId();
         CreateReviewRequest request = new CreateReviewRequest(currentUserId, revieweeId, listingId, rating, comment);
-        if (TextUtils.isEmpty(token)) {
-            Toast.makeText(this, R.string.review_login_required, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+        
         String authorization = "Bearer " + token;
 
         btnSubmitReview.setEnabled(false);
@@ -606,8 +588,7 @@ public class DetailActivity extends AppCompatActivity implements
                     loadReviews();
                     return;
                 }
-
-                Toast.makeText(DetailActivity.this, resolveSubmitError(response), Toast.LENGTH_SHORT).show();
+                Toast.makeText(DetailActivity.this, extractResponseErrorMessage(response, getString(R.string.review_submit_failed)), Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -619,6 +600,7 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void updateReviewSummary(List<JsonElement> reviews) {
+        if (tvReviewSummary == null) return;
         if (reviews == null || reviews.isEmpty()) {
             tvReviewSummary.setText(getString(R.string.review_summary_empty));
             return;
@@ -635,24 +617,23 @@ public class DetailActivity extends AppCompatActivity implements
                         total += rating;
                         counted++;
                     }
-                } catch (Exception ignored) {
-                    // Ignore malformed rating values.
-                }
+                } catch (Exception ignored) {}
             }
         }
 
         if (counted == 0) {
             tvReviewSummary.setText(getString(R.string.review_summary_count_only, reviews.size()));
-            return;
+        } else {
+            double average = (double) total / counted;
+            tvReviewSummary.setText(getString(R.string.review_summary_format, average, reviews.size()));
         }
-
-        double average = (double) total / counted;
-        tvReviewSummary.setText(getString(R.string.review_summary_format, average, reviews.size()));
     }
 
     private void showReviewEmpty(String message) {
-        tvReviewEmpty.setText(message);
-        tvReviewEmpty.setVisibility(android.view.View.VISIBLE);
+        if (tvReviewEmpty != null) {
+            tvReviewEmpty.setText(message);
+            tvReviewEmpty.setVisibility(android.view.View.VISIBLE);
+        }
     }
 
     private JsonObject asJsonObject(JsonElement element) {
@@ -660,23 +641,10 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private String sanitizeToken(String rawToken) {
-        if (TextUtils.isEmpty(rawToken)) {
-            return "";
-        }
-
+        if (TextUtils.isEmpty(rawToken)) return "";
         String trimmed = rawToken.trim();
-        if (trimmed.toLowerCase(Locale.ROOT).startsWith("bearer ")) {
-            return trimmed.substring(7).trim();
-        }
+        if (trimmed.toLowerCase(Locale.ROOT).startsWith("bearer ")) return trimmed.substring(7).trim();
         return trimmed;
-    }
-
-    private String resolveReviewError(Response<ApiResponse<List<JsonElement>>> response) {
-        return extractResponseErrorMessage(response, getString(R.string.review_load_failed));
-    }
-
-    private String resolveSubmitError(Response<ApiResponse<JsonElement>> response) {
-        return extractResponseErrorMessage(response, getString(R.string.review_submit_failed));
     }
 
     private <T> String extractResponseErrorMessage(Response<ApiResponse<T>> response, String fallback) {
@@ -685,28 +653,17 @@ public class DetailActivity extends AppCompatActivity implements
             if (body != null) {
                 if (body.getErrors() != null && !body.getErrors().isEmpty()) {
                     String firstError = body.getErrors().get(0);
-                    if (!TextUtils.isEmpty(firstError)) {
-                        return firstError;
-                    }
+                    if (!TextUtils.isEmpty(firstError)) return firstError;
                 }
-
-                if (!TextUtils.isEmpty(body.getMessage())) {
-                    return body.getMessage();
-                }
+                if (!TextUtils.isEmpty(body.getMessage())) return body.getMessage();
             }
-
             try (ResponseBody errorBody = response.errorBody()) {
                 if (errorBody != null) {
                     String raw = errorBody.string();
-                    if (!TextUtils.isEmpty(raw)) {
-                        return raw;
-                    }
+                    if (!TextUtils.isEmpty(raw)) return raw;
                 }
-            } catch (IOException ignored) {
-                // Fallback below.
-            }
+            } catch (IOException ignored) {}
         }
-
         return fallback;
     }
 }
