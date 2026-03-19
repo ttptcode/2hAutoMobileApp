@@ -14,6 +14,58 @@
     <string name="featured_section_subtitle">Danh sách xe mới cập nhật từ hệ thống 2H Auto.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_favorites">Yêu thích</string>
+<<<<<<< feature/chat_V3
+=======
+    <string name="news_title">Danh sách bài đăng</string>
+    <string name="news_subtitle">Tin nhắn và bài đăng liên quan đến tài khoản của bạn.</string>
+    <string name="news_open_post_count">%1$d cuộc trò chuyện</string>
+    <string name="news_empty">Không tìm thấy tin đăng</string>
+    <string name="news_empty_hint">Bạn hiện tại không có tin đăng nào cho trạng thái này</string>
+    <string name="news_action_create_post">Đăng tin</string>
+    <string name="news_user_tag">User</string>
+    <string name="news_search_hint">Tìm tin đăng của bạn...</string>
+    <string name="news_filter_title">Lọc theo danh mục:</string>
+    <string name="news_chip_all_count">Tất cả (%1$d)</string>
+    <string name="news_chip_car_count">Ô tô (%1$d)</string>
+    <string name="news_chip_motorbike_count">Xe máy (%1$d)</string>
+    <string name="news_chip_bicycle_count">Xe đạp (%1$d)</string>
+    <string name="news_chip_electric_count">Xe điện (%1$d)</string>
+    <string name="news_chip_parts_count">Phụ tùng/Phụ kiện (%1$d)</string>
+    <string name="news_tab_showing">ĐANG HIỂN THỊ (%1$d)</string>
+    <string name="news_tab_expired">HẾT HẠN (%1$d)</string>
+    <string name="news_tab_draft">TIN NHÁP (%1$d)</string>
+    <string name="news_phone_format">SĐT: %1$s</string>
+    <string name="news_phone_missing">Chưa cập nhật</string>
+    <string name="news_has_data_hint">Danh sách tin đăng của bạn</string>
+    <string name="news_auth_required">Bạn cần đăng nhập để xem danh sách bài đăng.</string>
+    <string name="news_user_id_missing">Không lấy được userId từ phiên đăng nhập.</string>
+    <string name="news_load_failed">Không thể tải danh sách bài đăng.</string>
+    <string name="news_message_fallback">Chưa có tin nhắn mới.</string>
+    <string name="news_status_fallback">Trạng thái chưa xác định</string>
+    <string name="news_title_fallback">Bài đăng không tiêu đề</string>
+    <string name="news_updated_prefix">Cập nhật: %1$s</string>
+    <string name="review_reviewer_fallback">Người dùng ẩn danh</string>
+    <string name="review_section_title">Đánh giá người bán</string>
+    <string name="review_input_hint">Viết đánh giá của bạn...</string>
+    <string name="review_submit">Gửi đánh giá</string>
+    <string name="review_comment_empty">Không có nội dung đánh giá.</string>
+    <string name="review_time_unknown">Không rõ thời gian</string>
+    <string name="review_rating_format">%1$s (%2$d/5)</string>
+    <string name="review_rating_selected">Điểm đã chọn: %1$d/5</string>
+    <string name="review_login_to_comment">Đăng nhập để gửi đánh giá...</string>
+    <string name="review_listing_id_missing">Không tìm thấy mã bài đăng để tải đánh giá.</string>
+    <string name="review_empty">Chưa có đánh giá nào cho bài đăng này.</string>
+    <string name="review_load_failed">Không tải được đánh giá. Vui lòng thử lại.</string>
+    <string name="review_login_required">Bạn cần đăng nhập để gửi đánh giá.</string>
+    <string name="review_reviewee_missing">Không xác định được người bán để đánh giá.</string>
+    <string name="review_user_id_missing">Không đọc được userId từ phiên đăng nhập.</string>
+    <string name="review_comment_required">Vui lòng nhập nội dung đánh giá.</string>
+    <string name="review_submit_success">Gửi đánh giá thành công.</string>
+    <string name="review_submit_failed">Không gửi được đánh giá. Vui lòng thử lại.</string>
+    <string name="review_summary_empty">Chưa có đánh giá</string>
+    <string name="review_summary_count_only">%1$d đánh giá</string>
+    <string name="review_summary_format">%1$.1f/5 từ %2$d đánh giá</string>
+>>>>>>> main
     <string name="nav_chat">Chat</string>
     <string name="nav_post">Đăng tin</string>
     <string name="nav_account">Tài khoản</string>
@@ -82,7 +134,10 @@
 Địa chỉ: %2$s</string>
     <string name="detail_chat_button">Chat</string>
     <string name="detail_contact_button">Liên hệ: 0901 234 567</string>
+<<<<<<< feature/chat_V3
     <string name="chat_open_failed">Không thể mở cuộc trò chuyện. Vui lòng thử lại.</string>
+=======
+>>>>>>> main
     <string name="detail_address_fallback">Liên hệ người bán để biết thêm</string>
     <string name="detail_specs_fallback">Sản phẩm này đang được cập nhật thêm thông số.</string>
     <string name="detail_spec_item_type">Loại xe</string>
@@ -147,6 +202,7 @@
     <string name="action_logout">Đăng xuất</string>
     <string name="action_upgrade">Nâng cấp gói</string>
     <string name="action_upgrade_now">Xem gói Pro</string>
+    <string name="account_menu_personal_info">Thông tin cá nhân</string>
     <string name="logout_success">Bạn đã đăng xuất khỏi tài khoản.</string>
     <string name="account_guest_name">Khách hàng 2H Auto</string>
     <string name="dialog_google_login">Đăng nhập bằng Google</string>

@@ -17,8 +17,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.a2hauto.api.ApiService;
+import com.example.a2hauto.auth.AuthInterceptor;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.Listing;
+import com.example.a2hauto.util.AuthDebugger;
+import com.example.a2hauto.util.ErrorHandler;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -120,8 +123,13 @@ public class CreateMotoPostActivity extends AppCompatActivity {
     }
 
     private void initRetrofit() {
+        // Tạo OkHttpClient với AuthInterceptor
+        okhttp3.OkHttpClient.Builder httpClient = new okhttp3.OkHttpClient.Builder();
+        httpClient.addInterceptor(new AuthInterceptor(this));
+
         apiService = new Retrofit.Builder()
                 .baseUrl("http://vehiclemarket.runasp.net/")
+                .client(httpClient.build())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(ApiService.class);
@@ -137,16 +145,77 @@ public class CreateMotoPostActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
+        
+        if (data == null) {
+            android.util.Log.d("VideoUpload", "onActivityResult: data is null");
+            return;
+        }
+        
+        if (resultCode == RESULT_OK) {
             if (requestCode == PICK_IMAGE_REQUEST) {
                 if (data.getClipData() != null) {
                     for (int i = 0; i < data.getClipData().getItemCount(); i++) addImagePreview(data.getClipData().getItemAt(i).getUri());
                 } else if (data.getData() != null) addImagePreview(data.getData());
             } else if (requestCode == PICK_VIDEO_REQUEST) {
-                selectedVideoUri = data.getData();
-                tvVideoStatus.setText("Đã chọn video");
+                Uri videoUri = data.getData();
+                if (videoUri != null) {
+                    if (isValidVideoFormat(videoUri)) {
+                        selectedVideoUri = videoUri;
+                        String videoName = getFileNameFromUri(videoUri);
+                        tvVideoStatus.setText("✓ " + videoName);
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.success_green, getTheme()));
+                    } else {
+                        Toast.makeText(this, "Định dạng video không hỗ trợ. Vui lòng chọn: MP4, AVI, MOV, WMV", Toast.LENGTH_LONG).show();
+                        selectedVideoUri = null;
+                        tvVideoStatus.setText("Chưa chọn video");
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.text_muted, getTheme()));
+                    }
+                }
             }
         }
+    }
+
+    private boolean isValidVideoFormat(Uri videoUri) {
+        String mimeType = getContentResolver().getType(videoUri);
+        if (mimeType == null) {
+            String fileName = getFileNameFromUri(videoUri);
+            return fileName != null && isValidVideoExtension(fileName);
+        }
+        return mimeType.startsWith("video/");
+    }
+
+    private boolean isValidVideoExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        return lowerName.endsWith(".mp4") || 
+               lowerName.endsWith(".avi") || 
+               lowerName.endsWith(".mov") || 
+               lowerName.endsWith(".wmv") ||
+               lowerName.endsWith(".mkv") ||
+               lowerName.endsWith(".flv") ||
+               lowerName.endsWith(".webm");
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String fileName = null;
+        if (uri.getScheme().equals("content")) {
+            android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(android.provider.MediaStore.MediaColumns.DISPLAY_NAME);
+                    fileName = cursor.getString(nameIndex);
+                }
+            } finally {
+                if (cursor != null) cursor.close();
+            }
+        }
+        if (fileName == null) {
+            fileName = uri.getPath();
+            int cut = fileName.lastIndexOf('/');
+            if (cut != -1) {
+                fileName = fileName.substring(cut + 1);
+            }
+        }
+        return fileName;
     }
 
     private void addImagePreview(Uri uri) {
@@ -160,14 +229,16 @@ public class CreateMotoPostActivity extends AppCompatActivity {
     }
 
     private void submitPost(boolean isDraft) {
+        // Debug authentication status
+        AuthDebugger.debugAuthStatus(this);
+
         if (selectedImageUris.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn ít nhất 1 hình ảnh", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (!isDraft) {
-            if (etTitle.getText().toString().isEmpty() || etPrice.getText().toString().isEmpty() || 
-                spinnerBrand.getText().toString().isEmpty()) {
+            if (etTitle.getText().toString().trim().isEmpty() || spinnerBrand.getText().toString().trim().isEmpty()) {
                 Toast.makeText(this, "Vui lòng điền đầy đủ các trường bắt buộc (*)", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -181,26 +252,63 @@ public class CreateMotoPostActivity extends AppCompatActivity {
         String itemTypeIdFromIntent = getIntent().getStringExtra("itemTypeId");
         fields.put("ItemTypeId", createPartFromString(itemTypeIdFromIntent != null ? itemTypeIdFromIntent : "a7d95ab6-0267-4e91-bc7f-04977f1b402a"));
         fields.put("SerialNumber", createPartFromString("MOTO_" + System.currentTimeMillis()));
-        fields.put("Title", createPartFromString(etTitle.getText().toString()));
-        fields.put("Brand", createPartFromString(spinnerBrand.getText().toString()));
-        fields.put("Year", createPartFromString(spinnerYear.getText().toString()));
-        fields.put("Condition", createPartFromString(spinnerCondition.getText().toString()));
-        fields.put("Origin", createPartFromString(spinnerOrigin.getText().toString()));
-        fields.put("Style", createPartFromString(spinnerVehicleType.getText().toString()));
-        fields.put("Capacity", createPartFromString(spinnerEngineSize.getText().toString()));
-        fields.put("Price", createPartFromString(etPrice.getText().toString()));
-        fields.put("BuyNowPrice", createPartFromString(etPrice.getText().toString()));
-        fields.put("Mileage", createPartFromString(etMileage.getText().toString()));
-        fields.put("Detail", createPartFromString(etDescription.getText().toString()));
-        fields.put("Address", createPartFromString(etAddress.getText().toString()));
+        
+        String titleValue = etTitle.getText().toString().trim();
+        fields.put("Title", createPartFromString(titleValue.isEmpty() ? "Chưa cập nhật" : titleValue));
+        
+        String brandValue = spinnerBrand.getText().toString().trim();
+        fields.put("Brand", createPartFromString(brandValue.isEmpty() ? "Khác" : brandValue));
+        
+        String yearValue = spinnerYear.getText().toString().trim();
+        fields.put("Year", createPartFromString(yearValue.isEmpty() ? "2024" : yearValue));
+        
+        String conditionValue = spinnerCondition.getText().toString().trim();
+        fields.put("Condition", createPartFromString(conditionValue.isEmpty() ? "Đã qua sử dụng" : conditionValue));
+        
+        String originValue = spinnerOrigin.getText().toString().trim();
+        fields.put("Origin", createPartFromString(originValue.isEmpty() ? "Việt Nam" : originValue));
+        
+        String styleValue = spinnerVehicleType.getText().toString().trim();
+        fields.put("Style", createPartFromString(styleValue.isEmpty() ? "Tay ga" : styleValue));
+        
+        String capacityValue = spinnerEngineSize.getText().toString().trim();
+        fields.put("Capacity", createPartFromString(capacityValue.isEmpty() ? "Không biết rõ" : capacityValue));
+        
+        String priceValue = etPrice.getText().toString().trim();
+        String finalPrice = priceValue.isEmpty() ? "0" : priceValue;
+        fields.put("Price", createPartFromString(finalPrice));
+        fields.put("BuyNowPrice", createPartFromString(finalPrice));
+        
+        String mileageValue = etMileage.getText().toString().trim();
+        fields.put("Mileage", createPartFromString(mileageValue.isEmpty() ? "0" : mileageValue));
+        
+        String descriptionValue = etDescription.getText().toString().trim();
+        fields.put("Detail", createPartFromString(descriptionValue.isEmpty() ? "Chưa cập nhật" : descriptionValue));
+        
+        String addressValue = etAddress.getText().toString().trim();
+        fields.put("Address", createPartFromString(addressValue.isEmpty() ? "Chưa cập nhật" : addressValue));
+        
         fields.put("ListingType", createPartFromString("0"));
         
         String sellerType = rgSellerType.getCheckedRadioButtonId() == R.id.rbIndividual ? "Cá nhân" : "Bán chuyên";
         fields.put("YouAre", createPartFromString(sellerType));
 
         List<MultipartBody.Part> imageParts = new ArrayList<>();
-        for (Uri uri : selectedImageUris) imageParts.add(prepareFilePart("Images", uri));
-        MultipartBody.Part videoPart = selectedVideoUri != null ? prepareFilePart("Video", selectedVideoUri) : null;
+        for (Uri uri : selectedImageUris) {
+            MultipartBody.Part part = prepareFilePart("Images", uri);
+            if (part != null) imageParts.add(part);
+        }
+
+        if (imageParts.isEmpty()) {
+            resetButtons();
+            Toast.makeText(this, "Lỗi xử lý hình ảnh", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        MultipartBody.Part videoPart = null;
+        if (selectedVideoUri != null) {
+            videoPart = prepareFilePart("Video", selectedVideoUri);
+        }
 
         apiService.createListing(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
             @Override
@@ -214,14 +322,14 @@ public class CreateMotoPostActivity extends AppCompatActivity {
                     }
                 } else {
                     resetButtons();
-                    Toast.makeText(CreateMotoPostActivity.this, "Lỗi tạo bài đăng", Toast.LENGTH_SHORT).show();
+                    ErrorHandler.handleErrorResponse(CreateMotoPostActivity.this, response);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
                 resetButtons();
-                Toast.makeText(CreateMotoPostActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                ErrorHandler.handleNetworkError(CreateMotoPostActivity.this, t);
             }
         });
     }
@@ -262,14 +370,56 @@ public class CreateMotoPostActivity extends AppCompatActivity {
     private MultipartBody.Part prepareFilePart(String partName, Uri fileUri) {
         try {
             InputStream inputStream = getContentResolver().openInputStream(fileUri);
+            if (inputStream == null) return null;
+            
             File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis());
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
             while ((read = inputStream.read(buffer)) != -1) outputStream.write(buffer, 0, read);
             outputStream.close();
-            RequestBody requestFile = RequestBody.create(MediaType.parse(getContentResolver().getType(fileUri)), file);
+            inputStream.close();
+            
+            String mimeType = getContentResolver().getType(fileUri);
+            
+            android.util.Log.d("VideoUpload", "Original MIME from ContentResolver: " + mimeType);
+            android.util.Log.d("VideoUpload", "File URI: " + fileUri);
+            
+            if (mimeType == null || !mimeType.startsWith("video")) {
+                String extensionMime = getMimeTypeFromExtension(file.getName());
+                android.util.Log.d("VideoUpload", "Fallback MIME from extension: " + extensionMime);
+                if (extensionMime != null) {
+                    mimeType = extensionMime;
+                }
+            }
+            
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+            
+            android.util.Log.d("VideoUpload", "Final MIME type: " + mimeType);
+            android.util.Log.d("VideoUpload", "File name: " + file.getName() + ", File size: " + file.length());
+            
+            MediaType mediaType = MediaType.parse(mimeType);
+            RequestBody requestFile = RequestBody.create(mediaType, file);
             return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error preparing file: " + e.getMessage(), e);
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String getMimeTypeFromExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".mp4")) return "video/mp4";
+        if (lowerName.endsWith(".avi")) return "video/x-msvideo";
+        if (lowerName.endsWith(".mov")) return "video/quicktime";
+        if (lowerName.endsWith(".wmv")) return "video/x-ms-wmv";
+        if (lowerName.endsWith(".mkv")) return "video/x-matroska";
+        if (lowerName.endsWith(".flv")) return "video/x-flv";
+        if (lowerName.endsWith(".webm")) return "video/webm";
+        if (lowerName.endsWith(".m4v")) return "video/mp4";
+        return "video/mp4";
     }
 }

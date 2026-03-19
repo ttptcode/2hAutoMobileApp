@@ -8,9 +8,12 @@ import com.example.a2hauto.R;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+<<<<<<< feature/chat_V3
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+=======
+>>>>>>> main
 
 public class AuthSessionManager {
 
@@ -43,7 +46,11 @@ public class AuthSessionManager {
         sharedPreferences.edit()
                 .putString(KEY_FULL_NAME, sanitizedName)
                 .putString(KEY_PHONE, normalizedPhone)
+<<<<<<< feature/chat_V3
                 .putString(KEY_AUTH_TOKEN, normalizedToken)
+=======
+                .putString(KEY_AUTH_TOKEN, normalizeAuthToken(authToken))
+>>>>>>> main
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .putBoolean(KEY_IS_LOGGED_IN, true)
@@ -79,12 +86,16 @@ public class AuthSessionManager {
     }
 
     public String getAuthToken() {
+<<<<<<< feature/chat_V3
         String rawToken = sharedPreferences.getString(KEY_AUTH_TOKEN, "");
         String normalizedToken = normalizeAuthToken(rawToken);
         if (!TextUtils.equals(rawToken, normalizedToken)) {
             sharedPreferences.edit().putString(KEY_AUTH_TOKEN, normalizedToken).apply();
         }
         return normalizedToken;
+=======
+        return normalizeAuthToken(sharedPreferences.getString(KEY_AUTH_TOKEN, ""));
+>>>>>>> main
     }
 
     public String getUserId() {
@@ -120,6 +131,7 @@ public class AuthSessionManager {
             trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
         }
 
+<<<<<<< feature/chat_V3
         String directJwt = extractJwtCandidate(trimmed);
         if (!TextUtils.isEmpty(directJwt)) {
             return directJwt;
@@ -150,6 +162,17 @@ public class AuthSessionManager {
         } catch (Exception ignored) {
             String fallbackJwt = extractJwtCandidate(trimmed);
             return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
+=======
+        if (trimmed.contains(".")) {
+            return trimmed;
+        }
+
+        try {
+            JsonElement element = new JsonParser().parse(trimmed);
+            return findToken(element);
+        } catch (Exception ignored) {
+            return trimmed;
+>>>>>>> main
         }
     }
 
@@ -194,6 +217,7 @@ public class AuthSessionManager {
 
         return "";
     }
+<<<<<<< feature/chat_V3
 
     private String extractJwtCandidate(String input) {
         if (TextUtils.isEmpty(input)) {
@@ -207,6 +231,8 @@ public class AuthSessionManager {
 
         return "";
     }
+=======
+>>>>>>> main
 }
 
 

@@ -4,10 +4,17 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
+<<<<<<< feature/chat_V3
         <DropdownSelection timestamp="2026-03-19T14:28:07.521410100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\ADMIN\.android\avd\Pixel_8_2.avd" />
+=======
+        <DropdownSelection timestamp="2026-03-19T12:14:46.889169500Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=lfnvqwkn4t5lkr4x" />
+>>>>>>> main
             </handle>
           </Target>
         </DropdownSelection>

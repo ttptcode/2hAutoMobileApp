@@ -7,8 +7,10 @@ import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.Message;
 import com.example.a2hauto.model.SendMessageRequest;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
+import com.example.a2hauto.model.UserProfileResponse;
 import com.google.gson.JsonElement;
 import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.CreateReviewRequest;
 import com.example.a2hauto.model.Listing;
 import com.example.a2hauto.model.ItemType;
 import java.util.List;
@@ -32,11 +34,29 @@ public interface ApiService {
     @GET("api/Listings")
     Call<ApiResponse<List<Listing>>> getListings();
 
+    @GET("api/Conversations/{userId}")
+    Call<ApiResponse<List<JsonElement>>> getConversations(
+            @Header("Authorization") String authorization,
+            @Path("userId") String userId
+    );
+
+    @GET("api/UserReputationReviews/listing/{listingId}")
+    Call<ApiResponse<List<JsonElement>>> getReviewsByListingId(
+            @Header("Authorization") String authorization,
+            @Path("listingId") String listingId
+    );
+
+    @POST("api/UserReputationReviews")
+    Call<ApiResponse<JsonElement>> createReview(
+            @Header("Authorization") String authorization,
+            @Body CreateReviewRequest request
+    );
+
     @GET("api/ItemTypes")
     Call<ApiResponse<List<ItemType>>> getItemTypes();
 
     @Multipart
-    @POST("api/Listings")
+    @POST("api/Listings/with-item")
     Call<ApiResponse<Listing>> createListing(
             @PartMap Map<String, RequestBody> fields,
             @Part List<MultipartBody.Part> Images,
@@ -87,4 +107,6 @@ public interface ApiService {
             @Header("Authorization") String authorization,
             @Body SendMessageRequest request
     );
+    @GET("api/Users/{id}")
+    Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
 }

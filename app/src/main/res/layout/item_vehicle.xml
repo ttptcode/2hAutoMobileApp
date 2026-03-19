@@ -31,6 +31,7 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:src="@tools:sample/backgrounds/scenic" />
 
+<<<<<<< feature/chat_V3
         <ImageView
             android:id="@+id/ivFavoriteBadge"
             android:layout_width="26dp"
@@ -42,12 +43,18 @@
             app:layout_constraintEnd_toEndOf="@id/ivVehicle"
             app:layout_constraintTop_toTopOf="@id/ivVehicle" />
 
+=======
+>>>>>>> main
         <androidx.appcompat.widget.AppCompatCheckBox
             android:id="@+id/cbSelectFavorite"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:buttonTint="@color/favorite_tint"
             android:contentDescription="@string/favorite_add"
+<<<<<<< feature/chat_V3
+=======
+            android:visibility="gone"
+>>>>>>> main
             app:layout_constraintEnd_toEndOf="@id/ivVehicle"
             app:layout_constraintTop_toTopOf="@id/ivVehicle" />
 
@@ -67,7 +74,7 @@
             tools:text="Đang mở bán" />
 
         <ImageButton
-            android:id="@+id/btnFavorite"
+            android:id="@+id/ivFavoriteBadge"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="@drawable/bg_favorite_button"

@@ -12,7 +12,7 @@
         android:id="@+id/scrollContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavCard"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -530,18 +530,15 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/bottomNavCard"
+    <FrameLayout
+        android:id="@+id/bottomNavContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="26dp"
-        app:cardElevation="10dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+<<<<<<< feature/chat_V3
         app:layout_constraintStart_toStartOf="parent"
         app:strokeColor="@color/card_border"
         app:strokeWidth="1dp">
@@ -727,5 +724,8 @@
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+=======
+        app:layout_constraintStart_toStartOf="parent" />
+>>>>>>> main
 
 </androidx.constraintlayout.widget.ConstraintLayout>

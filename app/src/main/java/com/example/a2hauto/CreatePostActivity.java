@@ -17,8 +17,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.a2hauto.api.ApiService;
+import com.example.a2hauto.auth.AuthInterceptor;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.Listing;
+import com.example.a2hauto.util.AuthDebugger;
+import com.example.a2hauto.util.ErrorHandler;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -130,8 +133,13 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void initRetrofit() {
+        // Tạo OkHttpClient với AuthInterceptor
+        okhttp3.OkHttpClient.Builder httpClient = new okhttp3.OkHttpClient.Builder();
+        httpClient.addInterceptor(new AuthInterceptor(this));
+
         apiService = new Retrofit.Builder()
                 .baseUrl("http://vehiclemarket.runasp.net/")
+                .client(httpClient.build())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(ApiService.class);
@@ -146,20 +154,197 @@ public class CreatePostActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
+        android.util.Log.d("VideoUpload", "╔════════════════════════════════════════");
+        android.util.Log.d("VideoUpload", "║ onActivityResult START");
+        android.util.Log.d("VideoUpload", "║ requestCode=" + requestCode + ", resultCode=" + resultCode);
+        android.util.Log.d("VideoUpload", "║ data is null? " + (data == null));
+        
+        // Wrap super call in try-catch to handle framework-level NPE from MIUI Gallery
+        try {
+            android.util.Log.d("VideoUpload", "║ Calling super.onActivityResult...");
+            super.onActivityResult(requestCode, resultCode, data);
+            android.util.Log.d("VideoUpload", "║ super.onActivityResult completed successfully");
+        } catch (NullPointerException e) {
+            android.util.Log.w("VideoUpload", "║ ⚠️ Framework NPE caught - continuing anyway");
+            android.util.Log.w("VideoUpload", "║ Error: " + e.getMessage());
+        } catch (Exception e) {
+            android.util.Log.w("VideoUpload", "║ ⚠️ Exception caught - continuing anyway");
+            android.util.Log.w("VideoUpload", "║ Error: " + e.getMessage());
+        }
+        
+        // Add null check for data
+        if (data == null) {
+            android.util.Log.d("VideoUpload", "║ ❌ data is null - returning early");
+            android.util.Log.d("VideoUpload", "╚════════════════════════════════════════");
+            return;
+        }
+        
+        android.util.Log.d("VideoUpload", "║ resultCode check: " + resultCode + " == RESULT_OK(" + RESULT_OK + ")? " + (resultCode == RESULT_OK));
+        
+        if (resultCode == RESULT_OK) {
+            android.util.Log.d("VideoUpload", "║ ✓ resultCode is RESULT_OK");
+            android.util.Log.d("VideoUpload", "║ requestCode check: " + requestCode);
+            android.util.Log.d("VideoUpload", "║ PICK_IMAGE_REQUEST=" + PICK_IMAGE_REQUEST + ", PICK_VIDEO_REQUEST=" + PICK_VIDEO_REQUEST);
+            
             if (requestCode == PICK_IMAGE_REQUEST) {
+                android.util.Log.d("VideoUpload", "║ → Processing IMAGE request");
                 if (data.getClipData() != null) {
-                    for (int i = 0; i < data.getClipData().getItemCount(); i++) addImagePreview(data.getClipData().getItemAt(i).getUri());
-                } else if (data.getData() != null) addImagePreview(data.getData());
+                    for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+                        addImagePreview(data.getClipData().getItemAt(i).getUri());
+                    }
+                } else if (data.getData() != null) {
+                    addImagePreview(data.getData());
+                }
             } else if (requestCode == PICK_VIDEO_REQUEST) {
-                selectedVideoUri = data.getData();
-                tvVideoStatus.setText("Đã chọn video");
+                android.util.Log.d("VideoUpload", "║ → Processing VIDEO request");
+                Uri videoUri = data.getData();
+                android.util.Log.d("VideoUpload", "║ videoUri from data.getData(): " + videoUri);
+                
+                if (videoUri != null) {
+                    android.util.Log.d("VideoUpload", "�� ✓ videoUri is not null");
+                    android.util.Log.d("VideoUpload", "║ Calling isValidVideoFormat...");
+                    if (isValidVideoFormat(videoUri)) {
+                        android.util.Log.d("VideoUpload", "║ ✓✓✓ isValidVideoFormat returned TRUE");
+                        selectedVideoUri = videoUri;
+                        String videoName = getFileNameFromUri(videoUri);
+                        tvVideoStatus.setText("✓ " + videoName);
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.success_green, getTheme()));
+                        android.util.Log.d("VideoUpload", "║ ✓✓✓ Video ACCEPTED: " + videoName);
+                    } else {
+                        android.util.Log.d("VideoUpload", "║ ✗✗✗ isValidVideoFormat returned FALSE");
+                        Toast.makeText(this, "Định dạng video không hỗ trợ. Vui lòng chọn: MP4, AVI, MOV, WMV", Toast.LENGTH_LONG).show();
+                        selectedVideoUri = null;
+                        tvVideoStatus.setText("Chưa chọn video");
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.text_muted, getTheme()));
+                        android.util.Log.d("VideoUpload", "║ Video REJECTED - showing toast");
+                    }
+                } else {
+                    android.util.Log.d("VideoUpload", "║ ❌ videoUri is NULL");
+                }
+            } else {
+                android.util.Log.d("VideoUpload", "║ ? Unknown requestCode: " + requestCode);
+            }
+        } else {
+            android.util.Log.d("VideoUpload", "║ ❌ resultCode is NOT RESULT_OK (is: " + resultCode + ")");
+        }
+        
+        android.util.Log.d("VideoUpload", "╚════════════════════════════════════════");
+    }
+
+    private boolean isValidVideoFormat(Uri videoUri) {
+        android.util.Log.d("VideoUpload", "=== isValidVideoFormat called with URI: " + videoUri);
+        
+        // Priority 1: Check file extension first (most reliable for MIUI Gallery which has bad MIME support)
+        String fileName = getFileNameFromUri(videoUri);
+        android.util.Log.d("VideoUpload", "File name from URI: " + fileName);
+        
+        if (fileName != null) {
+            fileName = fileName.toLowerCase();
+            // Accept ANY file with video extension
+            if (fileName.endsWith(".mp4") || fileName.endsWith(".avi") || fileName.endsWith(".mov") || 
+                fileName.endsWith(".wmv") || fileName.endsWith(".mkv") || fileName.endsWith(".flv") || 
+                fileName.endsWith(".webm") || fileName.endsWith(".m4v") || fileName.endsWith(".3gp") ||
+                fileName.endsWith(".ts") || fileName.endsWith(".mts")) {
+                android.util.Log.d("VideoUpload", "✓ Valid extension: " + fileName);
+                return true;
             }
         }
+        
+        // Priority 2: Check MIME type as fallback
+        String mimeType = getContentResolver().getType(videoUri);
+        android.util.Log.d("VideoUpload", "MIME type from ContentResolver: " + mimeType);
+        
+        if (mimeType != null && mimeType.startsWith("video/")) {
+            android.util.Log.d("VideoUpload", "✓ Valid MIME type: " + mimeType);
+            return true;
+        }
+        
+        // Priority 3: If all else fails but we have a valid file, accept it anyway
+        // Server will validate the actual format
+        if (fileName != null && !fileName.isEmpty()) {
+            android.util.Log.w("VideoUpload", "⚠️ File validation lenient mode - accepting: " + fileName);
+            return true;
+        }
+        
+        android.util.Log.e("VideoUpload", "✗ Invalid format - fileName: " + fileName + ", mimeType: " + mimeType);
+        return false;
+    }
+
+    private boolean isValidVideoExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        return lowerName.endsWith(".mp4") || 
+               lowerName.endsWith(".avi") || 
+               lowerName.endsWith(".mov") || 
+               lowerName.endsWith(".wmv") ||
+               lowerName.endsWith(".mkv") ||
+               lowerName.endsWith(".flv") ||
+               lowerName.endsWith(".webm");
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String fileName = null;
+        
+        try {
+            // Method 1: Query ContentResolver (works with MediaStore)
+            if (uri.getScheme() != null && uri.getScheme().equals("content")) {
+                android.database.Cursor cursor = null;
+                try {
+                    cursor = getContentResolver().query(uri, null, null, null, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int nameIndex = cursor.getColumnIndex(android.provider.MediaStore.MediaColumns.DISPLAY_NAME);
+                        if (nameIndex >= 0) {
+                            fileName = cursor.getString(nameIndex);
+                            android.util.Log.d("VideoUpload", "Got filename from DISPLAY_NAME: " + fileName);
+                            if (fileName != null && !fileName.isEmpty()) {
+                                return fileName;
+                            }
+                        }
+                    }
+                } finally {
+                    if (cursor != null) cursor.close();
+                }
+            }
+            
+            // Method 2: Extract from URI path (for MIUI Gallery and file:// URIs)
+            String path = uri.getPath();
+            if (path != null && !path.isEmpty()) {
+                android.util.Log.d("VideoUpload", "Raw URI path: " + path);
+                
+                // Try to decode URL encoding (for MIUI Gallery URIs like %2F)
+                try {
+                    path = java.net.URLDecoder.decode(path, "UTF-8");
+                    android.util.Log.d("VideoUpload", "Decoded URI path: " + path);
+                } catch (Exception e) {
+                    android.util.Log.d("VideoUpload", "Could not decode path: " + e.getMessage());
+                }
+                
+                // Extract filename from path
+                int cut = path.lastIndexOf('/');
+                if (cut >= 0 && cut < path.length() - 1) {
+                    fileName = path.substring(cut + 1);
+                    android.util.Log.d("VideoUpload", "Extracted filename from path: " + fileName);
+                    if (fileName != null && !fileName.isEmpty()) {
+                        return fileName;
+                    }
+                }
+            }
+            
+            // Method 3: Extract from last path segment (Android API 26+)
+            String lastSegment = uri.getLastPathSegment();
+            if (lastSegment != null && !lastSegment.isEmpty()) {
+                android.util.Log.d("VideoUpload", "Got lastPathSegment: " + lastSegment);
+                return lastSegment;
+            }
+            
+        } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error in getFileNameFromUri: " + e.getMessage(), e);
+        }
+        
+        return fileName;
     }
 
     private void addImagePreview(Uri uri) {
+        if (selectedImageUris.size() >= 20) return;
         selectedImageUris.add(uri);
         ImageButton imgBtn = new ImageButton(this);
         imgBtn.setLayoutParams(new LinearLayout.LayoutParams(250, 250));
@@ -169,14 +354,16 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void submitPost(boolean isDraft) {
+        // Debug authentication status
+        AuthDebugger.debugAuthStatus(this);
+
         if (selectedImageUris.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn ít nhất 1 hình ảnh", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (!isDraft) {
-            if (etTitle.getText().toString().isEmpty() || etPrice.getText().toString().isEmpty() || 
-                spinnerBrand.getText().toString().isEmpty() || etModel.getText().toString().isEmpty()) {
+            if (etTitle.getText().toString().isEmpty() || spinnerBrand.getText().toString().isEmpty() || etModel.getText().toString().isEmpty()) {
                 Toast.makeText(this, "Vui lòng điền đầy đủ các trường bắt buộc (*)", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -190,36 +377,83 @@ public class CreatePostActivity extends AppCompatActivity {
         String itemTypeId = getIntent().getStringExtra("itemTypeId");
         fields.put("ItemTypeId", createPartFromString(itemTypeId != null ? itemTypeId : "e6aee7cb-dff5-41a5-8cce-55f174768daa"));
         fields.put("SerialNumber", createPartFromString("CAR_" + System.currentTimeMillis()));
-        fields.put("Title", createPartFromString(etTitle.getText().toString()));
-        fields.put("Brand", createPartFromString(spinnerBrand.getText().toString()));
-        fields.put("Model", createPartFromString(etModel.getText().toString()));
-        fields.put("Year", createPartFromString(spinnerYear.getText().toString()));
-        fields.put("Condition", createPartFromString(spinnerCondition.getText().toString()));
-        fields.put("Price", createPartFromString(etPrice.getText().toString().isEmpty() ? "0" : etPrice.getText().toString()));
-        fields.put("Mileage", createPartFromString(etMileage.getText().toString()));
-        fields.put("Origin", createPartFromString(spinnerOrigin.getText().toString()));
-        fields.put("Style", createPartFromString(spinnerStyle.getText().toString()));
-        fields.put("Seat", createPartFromString(spinnerSeats.getText().toString()));
-        fields.put("Color", createPartFromString(spinnerColor.getText().toString()));
-        fields.put("Fuel", createPartFromString(spinnerFuel.getText().toString()));
-        fields.put("Gearbox", createPartFromString(spinnerGearbox.getText().toString()));
-        fields.put("OwnerCount", createPartFromString(spinnerOwnerCount.getText().toString()));
+        
+        String titleValue = etTitle.getText().toString().trim();
+        fields.put("Title", createPartFromString(titleValue.isEmpty() ? "Chưa cập nhật" : titleValue));
+        
+        String brandValue = spinnerBrand.getText().toString().trim();
+        fields.put("Brand", createPartFromString(brandValue.isEmpty() ? "Khác" : brandValue));
+        
+        String modelValue = etModel.getText().toString().trim();
+        fields.put("Model", createPartFromString(modelValue.isEmpty() ? "Chưa cập nhật" : modelValue));
+        
+        String yearValue = spinnerYear.getText().toString().trim();
+        fields.put("Year", createPartFromString(yearValue.isEmpty() ? "2024" : yearValue));
+        
+        String conditionValue = spinnerCondition.getText().toString().trim();
+        fields.put("Condition", createPartFromString(conditionValue.isEmpty() ? "Đã qua sử dụng" : conditionValue));
+        
+        String priceValue = etPrice.getText().toString().trim();
+        String finalPrice = priceValue.isEmpty() ? "0" : priceValue;
+        fields.put("Price", createPartFromString(finalPrice));
+        fields.put("BuyNowPrice", createPartFromString(finalPrice));
+        
+        String mileageValue = etMileage.getText().toString().trim();
+        fields.put("Mileage", createPartFromString(mileageValue.isEmpty() ? "0" : mileageValue));
+        
+        String originValue = spinnerOrigin.getText().toString().trim();
+        fields.put("Origin", createPartFromString(originValue.isEmpty() ? "Việt Nam" : originValue));
+        
+        String styleValue = spinnerStyle.getText().toString().trim();
+        fields.put("Style", createPartFromString(styleValue.isEmpty() ? "Sedan" : styleValue));
+        
+        String seatValue = spinnerSeats.getText().toString().trim();
+        fields.put("Seat", createPartFromString(seatValue.isEmpty() ? "5" : seatValue));
+        
+        String colorValue = spinnerColor.getText().toString().trim();
+        fields.put("Color", createPartFromString(colorValue.isEmpty() ? "Trắng" : colorValue));
+        
+        String fuelValue = spinnerFuel.getText().toString().trim();
+        fields.put("Fuel", createPartFromString(fuelValue.isEmpty() ? "Xăng" : fuelValue));
+        
+        String gearboxValue = spinnerGearbox.getText().toString().trim();
+        fields.put("Gearbox", createPartFromString(gearboxValue.isEmpty() ? "Số tự động" : gearboxValue));
+        
+        String ownerCountValue = spinnerOwnerCount.getText().toString().trim();
+        fields.put("OwnerCount", createPartFromString(ownerCountValue.isEmpty() ? "Chủ đầu tiên" : ownerCountValue));
+        
         fields.put("ListingType", createPartFromString("0"));
-        fields.put("BuyNowPrice", createPartFromString(etPrice.getText().toString().isEmpty() ? "0" : etPrice.getText().toString()));
-        fields.put("Detail", createPartFromString(etDescription.getText().toString()));
-        fields.put("Address", createPartFromString(etAddress.getText().toString()));
+        
+        String descriptionValue = etDescription.getText().toString().trim();
+        fields.put("Detail", createPartFromString(descriptionValue.isEmpty() ? "Chưa cập nhật" : descriptionValue));
+        
+        String addressValue = etAddress.getText().toString().trim();
+        fields.put("Address", createPartFromString(addressValue.isEmpty() ? "Chưa cập nhật" : addressValue));
         
         String sellerType = rgSellerType.getCheckedRadioButtonId() == R.id.rbIndividual ? "Cá nhân" : "Bán chuyên";
         fields.put("YouAre", createPartFromString(sellerType));
 
         List<MultipartBody.Part> imageParts = new ArrayList<>();
-        for (Uri uri : selectedImageUris) imageParts.add(prepareFilePart("Images", uri));
-        MultipartBody.Part videoPart = selectedVideoUri != null ? prepareFilePart("Video", selectedVideoUri) : null;
+        for (Uri uri : selectedImageUris) {
+            MultipartBody.Part part = prepareFilePart("Images", uri);
+            if (part != null) imageParts.add(part);
+        }
+
+        if (imageParts.isEmpty()) {
+            resetButtons();
+            Toast.makeText(this, "Lỗi xử lý hình ảnh", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        MultipartBody.Part videoPart = null;
+        if (selectedVideoUri != null) {
+            videoPart = prepareFilePart("Video", selectedVideoUri);
+        }
 
         apiService.createListing(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
             @Override
             public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
-                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                if (response.isSuccessful() && response.body() != null) {
                     String listingId = response.body().getData().getListingId();
                     if (isDraft) {
                         finishSuccess("Đã lưu bản nháp thành công!");
@@ -228,14 +462,14 @@ public class CreatePostActivity extends AppCompatActivity {
                     }
                 } else {
                     resetButtons();
-                    Toast.makeText(CreatePostActivity.this, "Lỗi tạo bài đăng", Toast.LENGTH_SHORT).show();
+                    ErrorHandler.handleErrorResponse(CreatePostActivity.this, response);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
                 resetButtons();
-                Toast.makeText(CreatePostActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                ErrorHandler.handleNetworkError(CreatePostActivity.this, t);
             }
         });
     }
@@ -276,14 +510,75 @@ public class CreatePostActivity extends AppCompatActivity {
     private MultipartBody.Part prepareFilePart(String partName, Uri fileUri) {
         try {
             InputStream inputStream = getContentResolver().openInputStream(fileUri);
-            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis());
+            if (inputStream == null) return null;
+            
+            // Get original filename to extract extension
+            String originalFileName = getFileNameFromUri(fileUri);
+            android.util.Log.d("VideoUpload", "Original filename: " + originalFileName);
+            
+            // Extract extension from original filename
+            String extension = "";
+            if (originalFileName != null && originalFileName.contains(".")) {
+                extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                android.util.Log.d("VideoUpload", "Extracted extension: " + extension);
+            }
+            
+            // Create temp file with extension
+            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis() + extension);
+            android.util.Log.d("VideoUpload", "Created temp file with extension: " + file.getName());
+            
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
             while ((read = inputStream.read(buffer)) != -1) outputStream.write(buffer, 0, read);
             outputStream.close();
-            RequestBody requestFile = RequestBody.create(MediaType.parse(getContentResolver().getType(fileUri)), file);
+            inputStream.close();
+            
+            // Get MIME type
+            String mimeType = getContentResolver().getType(fileUri);
+            
+            // Log original MIME type
+            android.util.Log.d("VideoUpload", "Original MIME from ContentResolver: " + mimeType);
+            android.util.Log.d("VideoUpload", "File URI: " + fileUri);
+            android.util.Log.d("VideoUpload", "File path: " + file.getAbsolutePath());
+            
+            // Fallback to extension-based detection if MIME is null or not video
+            if (mimeType == null || !mimeType.startsWith("video")) {
+                String extensionMime = getMimeTypeFromExtension(file.getName());
+                android.util.Log.d("VideoUpload", "Fallback MIME from extension: " + extensionMime);
+                if (extensionMime != null) {
+                    mimeType = extensionMime;
+                }
+            }
+            
+            // Final MIME type
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+            
+            android.util.Log.d("VideoUpload", "Final MIME type: " + mimeType);
+            android.util.Log.d("VideoUpload", "File name: " + file.getName() + ", File size: " + file.length());
+            
+            MediaType mediaType = MediaType.parse(mimeType);
+            RequestBody requestFile = RequestBody.create(mediaType, file);
             return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error preparing file: " + e.getMessage(), e);
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String getMimeTypeFromExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".mp4")) return "video/mp4";
+        if (lowerName.endsWith(".avi")) return "video/x-msvideo";
+        if (lowerName.endsWith(".mov")) return "video/quicktime";
+        if (lowerName.endsWith(".wmv")) return "video/x-ms-wmv";
+        if (lowerName.endsWith(".mkv")) return "video/x-matroska";
+        if (lowerName.endsWith(".flv")) return "video/x-flv";
+        if (lowerName.endsWith(".webm")) return "video/webm";
+        if (lowerName.endsWith(".m4v")) return "video/mp4";
+        return "video/mp4"; // Default to MP4
     }
 }

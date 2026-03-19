@@ -73,19 +73,22 @@ public final class JwtUtils {
             }
 
             JsonObject jsonObject = element.getAsJsonObject();
-            String[] candidateKeys = new String[] {
+                String[] candidateKeys = new String[] {
                     "userId",
+                    "userid",
+                    "id",
+                    "Id",
                     "sub",
+                    "Subject",
                     "nameid",
+                    "NameIdentifier",
                     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
             };
 
             for (String key : candidateKeys) {
-                if (jsonObject.has(key) && !jsonObject.get(key).isJsonNull()) {
-                    String value = jsonObject.get(key).getAsString();
-                    if (value != null && !value.trim().isEmpty()) {
-                        return value.trim();
-                    }
+                String value = getClaimValue(jsonObject, key);
+                if (value != null && !value.trim().isEmpty()) {
+                    return value.trim();
                 }
             }
         } catch (Exception ignored) {
@@ -107,6 +110,45 @@ public final class JwtUtils {
             return value + "===";
         }
         return value;
+    }
+
+    private static String getClaimValue(JsonObject object, String key) {
+        if (object == null || key == null || key.isEmpty()) {
+            return "";
+        }
+
+        if (object.has(key) && !object.get(key).isJsonNull()) {
+            try {
+                return object.get(key).getAsString();
+            } catch (Exception ignored) {
+                return "";
+            }
+        }
+
+        for (String candidateKey : object.keySet()) {
+            if (candidateKey == null) {
+                continue;
+            }
+
+            String normalizedCandidate = candidateKey.toLowerCase();
+            String normalizedTarget = key.toLowerCase();
+            boolean isSame = normalizedCandidate.equals(normalizedTarget);
+            boolean isUriSuffixMatch = normalizedCandidate.endsWith("/" + normalizedTarget);
+            if (!isSame && !isUriSuffixMatch) {
+                continue;
+            }
+
+            try {
+                JsonElement element = object.get(candidateKey);
+                if (element != null && !element.isJsonNull()) {
+                    return element.getAsString();
+                }
+            } catch (Exception ignored) {
+                return "";
+            }
+        }
+
+        return "";
     }
 }
 
