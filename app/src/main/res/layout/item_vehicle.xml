@@ -58,7 +58,7 @@
             android:foreground="?attr/selectableItemBackgroundBorderless"
             android:padding="7dp"
             android:scaleType="centerInside"
-            android:src="@android:drawable/btn_star_big_off"
+            android:src="@drawable/ic_favorite_heart_outline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/favorite_tint" />

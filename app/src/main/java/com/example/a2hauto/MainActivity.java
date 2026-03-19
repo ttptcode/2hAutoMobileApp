@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvMiniHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         findViewById(R.id.navHome).setOnClickListener(v -> rvVehicles.smoothScrollToPosition(0));
         findViewById(R.id.navFavorites).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        findViewById(R.id.navChat).setOnClickListener(v -> showComingSoon(getString(R.string.nav_chat)));
         findViewById(R.id.navPost).setOnClickListener(v -> handlePostAction());
         findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
     }

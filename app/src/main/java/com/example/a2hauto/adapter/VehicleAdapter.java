@@ -166,8 +166,8 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
     private void bindFavoriteState(VehicleViewHolder holder, boolean isFavorite) {
         holder.btnFavorite.setSelected(isFavorite);
         holder.btnFavorite.setImageResource(isFavorite
-                ? android.R.drawable.btn_star_big_on
-                : android.R.drawable.btn_star_big_off);
+                ? R.drawable.ic_favorite_heart_filled
+                : R.drawable.ic_favorite_heart_outline);
         holder.btnFavorite.setContentDescription(holder.itemView.getContext().getString(
                 isFavorite ? R.string.favorite_remove : R.string.favorite_add));
     }
