@@ -54,6 +54,50 @@ public final class JwtUtils {
         return "";
     }
 
+    public static String extractUserId(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return "";
+        }
+
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return "";
+            }
+
+            byte[] decodedPayload = Base64.getUrlDecoder().decode(addPadding(parts[1]));
+            String payload = new String(decodedPayload, StandardCharsets.UTF_8);
+            JsonElement element = new JsonParser().parse(payload);
+            if (!element.isJsonObject()) {
+                return "";
+            }
+
+            JsonObject jsonObject = element.getAsJsonObject();
+                String[] candidateKeys = new String[] {
+                    "userId",
+                    "userid",
+                    "id",
+                    "Id",
+                    "sub",
+                    "Subject",
+                    "nameid",
+                    "NameIdentifier",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+            };
+
+            for (String key : candidateKeys) {
+                String value = getClaimValue(jsonObject, key);
+                if (value != null && !value.trim().isEmpty()) {
+                    return value.trim();
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignore malformed token content and fallback elsewhere.
+        }
+
+        return "";
+    }
+
     private static String addPadding(String value) {
         int padding = value.length() % 4;
         if (padding == 2) {
@@ -66,6 +110,45 @@ public final class JwtUtils {
             return value + "===";
         }
         return value;
+    }
+
+    private static String getClaimValue(JsonObject object, String key) {
+        if (object == null || key == null || key.isEmpty()) {
+            return "";
+        }
+
+        if (object.has(key) && !object.get(key).isJsonNull()) {
+            try {
+                return object.get(key).getAsString();
+            } catch (Exception ignored) {
+                return "";
+            }
+        }
+
+        for (String candidateKey : object.keySet()) {
+            if (candidateKey == null) {
+                continue;
+            }
+
+            String normalizedCandidate = candidateKey.toLowerCase();
+            String normalizedTarget = key.toLowerCase();
+            boolean isSame = normalizedCandidate.equals(normalizedTarget);
+            boolean isUriSuffixMatch = normalizedCandidate.endsWith("/" + normalizedTarget);
+            if (!isSame && !isUriSuffixMatch) {
+                continue;
+            }
+
+            try {
+                JsonElement element = object.get(candidateKey);
+                if (element != null && !element.isJsonNull()) {
+                    return element.getAsString();
+                }
+            } catch (Exception ignored) {
+                return "";
+            }
+        }
+
+        return "";
     }
 }
 

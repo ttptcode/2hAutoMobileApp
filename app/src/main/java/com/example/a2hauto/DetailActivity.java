@@ -2,11 +2,17 @@ package com.example.a2hauto;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+<<<<<<< Updated upstream
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+=======
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.RatingBar;
+>>>>>>> Stashed changes
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+<<<<<<< Updated upstream
 import com.example.a2hauto.adapter.VehicleAdapter;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
@@ -30,8 +37,32 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+=======
+import com.example.a2hauto.adapter.ReviewAdapter;
+import com.example.a2hauto.api.ApiClient;
+import com.example.a2hauto.api.ApiService;
+import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.auth.JwtUtils;
+import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.CreateReviewRequest;
+import com.example.a2hauto.model.Item;
+import com.example.a2hauto.model.Listing;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import java.text.NumberFormat;
+import java.util.ArrayList;
+>>>>>>> Stashed changes
 import java.util.List;
 import java.util.Locale;
+import java.io.IOException;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -57,23 +88,53 @@ public class DetailActivity extends AppCompatActivity implements
     private TextView tvRelatedEmpty;
     private ProgressBar progressRelated;
 
+    private ApiService apiService;
+    private AuthSessionManager authSessionManager;
+
+    private RecyclerView rvReviews;
+    private ProgressBar progressReviews;
+    private TextView tvReviewEmpty;
+    private TextView tvReviewSummary;
+    private TextView tvRatingValue;
+    private RatingBar ratingBarReview;
+    private TextInputEditText etReviewComment;
+    private MaterialButton btnSubmitReview;
+
+    private ReviewAdapter reviewAdapter;
+    private Listing listing;
+    private String token;
+    private String currentUserId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
+<<<<<<< Updated upstream
         currentListing = (Listing) getIntent().getSerializableExtra("listing");
         if (currentListing == null) {
+=======
+        listing = (Listing) getIntent().getSerializableExtra("listing");
+        if (listing == null) {
+>>>>>>> Stashed changes
             finish();
             return;
         }
 
+<<<<<<< Updated upstream
         authSessionManager = new AuthSessionManager(this);
         bindHeaderViews();
         setupHeaderActions();
         refreshAuthHeaderUi();
         apiService = ApiClient.getApiService();
         setupRelatedSection();
+=======
+        apiService = ApiClient.getApiService();
+        authSessionManager = new AuthSessionManager(this);
+
+        token = sanitizeToken(authSessionManager.getAuthToken());
+        currentUserId = JwtUtils.extractUserId(token);
+>>>>>>> Stashed changes
 
         ImageView ivDetail = findViewById(R.id.ivDetail);
         TextView tvDetailName = findViewById(R.id.tvDetailName);
@@ -339,6 +400,86 @@ public class DetailActivity extends AppCompatActivity implements
             public void onFailure(Call<ApiResponse<List<Listing>>> call, Throwable t) {
                 progressRelated.setVisibility(ProgressBar.GONE);
                 showRelatedEmpty();
+        setupReviewViews();
+        loadReviews();
+    }
+
+    private void setupReviewViews() {
+        rvReviews = findViewById(R.id.rvReviews);
+        progressReviews = findViewById(R.id.progressReviews);
+        tvReviewEmpty = findViewById(R.id.tvReviewEmpty);
+        tvReviewSummary = findViewById(R.id.tvReviewSummary);
+        tvRatingValue = findViewById(R.id.tvRatingValue);
+        ratingBarReview = findViewById(R.id.ratingBarReview);
+        etReviewComment = findViewById(R.id.etReviewComment);
+        btnSubmitReview = findViewById(R.id.btnSubmitReview);
+
+        rvReviews.setLayoutManager(new LinearLayoutManager(this));
+        reviewAdapter = new ReviewAdapter(new ArrayList<>());
+        rvReviews.setAdapter(reviewAdapter);
+
+        tvRatingValue.setText(getString(R.string.review_rating_selected, (int) ratingBarReview.getRating()));
+        ratingBarReview.setOnRatingBarChangeListener((ratingBar, rating, fromUser) ->
+                tvRatingValue.setText(getString(R.string.review_rating_selected, (int) rating)));
+
+        if (!authSessionManager.isLoggedIn() || TextUtils.isEmpty(token) || TextUtils.isEmpty(currentUserId)) {
+            btnSubmitReview.setEnabled(false);
+            etReviewComment.setEnabled(false);
+            etReviewComment.setHint(R.string.review_login_to_comment);
+        } else {
+            btnSubmitReview.setOnClickListener(view -> submitReview());
+        }
+    }
+
+    private void loadReviews() {
+        String listingId = listing.getListingId();
+        if (TextUtils.isEmpty(listingId)) {
+            showReviewEmpty(getString(R.string.review_listing_id_missing));
+            return;
+        }
+
+        if (TextUtils.isEmpty(token)) {
+            reviewAdapter.setData(new ArrayList<>());
+            updateReviewSummary(new ArrayList<>());
+            showReviewEmpty(getString(R.string.review_login_required));
+            return;
+        }
+
+        progressReviews.setVisibility(android.view.View.VISIBLE);
+        tvReviewEmpty.setVisibility(android.view.View.GONE);
+
+        String authorization = "Bearer " + token;
+        apiService.getReviewsByListingId(authorization, listingId).enqueue(new Callback<ApiResponse<List<JsonElement>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<JsonElement>>> call, Response<ApiResponse<List<JsonElement>>> response) {
+                progressReviews.setVisibility(android.view.View.GONE);
+
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    List<JsonElement> reviews = response.body().getData();
+                    if (reviews == null) {
+                        reviews = new ArrayList<>();
+                    }
+                    reviewAdapter.setData(reviews);
+                    updateReviewSummary(reviews);
+                    if (reviews.isEmpty()) {
+                        showReviewEmpty(getString(R.string.review_empty));
+                    } else {
+                        tvReviewEmpty.setVisibility(android.view.View.GONE);
+                    }
+                    return;
+                }
+
+                reviewAdapter.setData(new ArrayList<>());
+                updateReviewSummary(new ArrayList<>());
+                showReviewEmpty(resolveReviewError(response));
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<JsonElement>>> call, Throwable throwable) {
+                progressReviews.setVisibility(android.view.View.GONE);
+                reviewAdapter.setData(new ArrayList<>());
+                updateReviewSummary(new ArrayList<>());
+                showReviewEmpty(getString(R.string.review_load_failed));
             }
         });
     }
@@ -419,5 +560,153 @@ public class DetailActivity extends AppCompatActivity implements
             this.title = title;
             this.iconResId = iconResId;
         }
+    private void submitReview() {
+        if (!authSessionManager.isLoggedIn()) {
+            Toast.makeText(this, R.string.review_login_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String revieweeId = listing.getUserId();
+        if (TextUtils.isEmpty(revieweeId)) {
+            Toast.makeText(this, R.string.review_reviewee_missing, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (TextUtils.isEmpty(currentUserId)) {
+            Toast.makeText(this, R.string.review_user_id_missing, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String comment = etReviewComment.getText() == null ? "" : etReviewComment.getText().toString().trim();
+        if (TextUtils.isEmpty(comment)) {
+            etReviewComment.setError(getString(R.string.review_comment_required));
+            return;
+        }
+
+        int rating = Math.max(1, Math.min(5, (int) ratingBarReview.getRating()));
+        String listingId = listing.getListingId();
+        CreateReviewRequest request = new CreateReviewRequest(currentUserId, revieweeId, listingId, rating, comment);
+        if (TextUtils.isEmpty(token)) {
+            Toast.makeText(this, R.string.review_login_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String authorization = "Bearer " + token;
+
+        btnSubmitReview.setEnabled(false);
+        apiService.createReview(authorization, request).enqueue(new Callback<ApiResponse<JsonElement>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<JsonElement>> call, Response<ApiResponse<JsonElement>> response) {
+                btnSubmitReview.setEnabled(true);
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    etReviewComment.setText("");
+                    ratingBarReview.setRating(5);
+                    tvRatingValue.setText(getString(R.string.review_rating_selected, 5));
+                    Toast.makeText(DetailActivity.this, R.string.review_submit_success, Toast.LENGTH_SHORT).show();
+                    loadReviews();
+                    return;
+                }
+
+                Toast.makeText(DetailActivity.this, resolveSubmitError(response), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<JsonElement>> call, Throwable throwable) {
+                btnSubmitReview.setEnabled(true);
+                Toast.makeText(DetailActivity.this, R.string.review_submit_failed, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateReviewSummary(List<JsonElement> reviews) {
+        if (reviews == null || reviews.isEmpty()) {
+            tvReviewSummary.setText(getString(R.string.review_summary_empty));
+            return;
+        }
+
+        int total = 0;
+        int counted = 0;
+        for (JsonElement element : reviews) {
+            JsonObject object = asJsonObject(element);
+            if (object.has("rating") && !object.get("rating").isJsonNull()) {
+                try {
+                    int rating = object.get("rating").getAsInt();
+                    if (rating > 0) {
+                        total += rating;
+                        counted++;
+                    }
+                } catch (Exception ignored) {
+                    // Ignore malformed rating values.
+                }
+            }
+        }
+
+        if (counted == 0) {
+            tvReviewSummary.setText(getString(R.string.review_summary_count_only, reviews.size()));
+            return;
+        }
+
+        double average = (double) total / counted;
+        tvReviewSummary.setText(getString(R.string.review_summary_format, average, reviews.size()));
+    }
+
+    private void showReviewEmpty(String message) {
+        tvReviewEmpty.setText(message);
+        tvReviewEmpty.setVisibility(android.view.View.VISIBLE);
+    }
+
+    private JsonObject asJsonObject(JsonElement element) {
+        return element != null && element.isJsonObject() ? element.getAsJsonObject() : new JsonObject();
+    }
+
+    private String sanitizeToken(String rawToken) {
+        if (TextUtils.isEmpty(rawToken)) {
+            return "";
+        }
+
+        String trimmed = rawToken.trim();
+        if (trimmed.toLowerCase(Locale.ROOT).startsWith("bearer ")) {
+            return trimmed.substring(7).trim();
+        }
+        return trimmed;
+    }
+
+    private String resolveReviewError(Response<ApiResponse<List<JsonElement>>> response) {
+        return extractResponseErrorMessage(response, getString(R.string.review_load_failed));
+    }
+
+    private String resolveSubmitError(Response<ApiResponse<JsonElement>> response) {
+        return extractResponseErrorMessage(response, getString(R.string.review_submit_failed));
+    }
+
+    private <T> String extractResponseErrorMessage(Response<ApiResponse<T>> response, String fallback) {
+        if (response != null) {
+            ApiResponse<T> body = response.body();
+            if (body != null) {
+                if (body.getErrors() != null && !body.getErrors().isEmpty()) {
+                    String firstError = body.getErrors().get(0);
+                    if (!TextUtils.isEmpty(firstError)) {
+                        return firstError;
+                    }
+                }
+
+                if (!TextUtils.isEmpty(body.getMessage())) {
+                    return body.getMessage();
+                }
+            }
+
+            try (ResponseBody errorBody = response.errorBody()) {
+                if (errorBody != null) {
+                    String raw = errorBody.string();
+                    if (!TextUtils.isEmpty(raw)) {
+                        return raw;
+                    }
+                }
+            } catch (IOException ignored) {
+                // Fallback below.
+            }
+        }
+
+        return fallback;
     }
 }
