@@ -7,6 +7,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -98,10 +99,16 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     // Navbar items
     private LinearLayout navHome, navFavorites, navPost, navChat, navAccount;
     private int currentNavItem = 0; // 0=Home, 1=Favorites, 2=Post, 3=Chat, 4=Account
+    private int previousNavItem = 0; // Track previous position for smart transitions
     
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
     private final Set<String> cachedFavoriteListingIds = new HashSet<>();
+    
+    // Gesture detection
+    private GestureDetector gestureDetector;
+    private static final int SWIPE_THRESHOLD = 100;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
     private final List<Listing> allActiveListings = new ArrayList<>();
     private String homeSearchQuery = "";
     private HomeCategoryFilter selectedHomeCategory = HomeCategoryFilter.ALL;
@@ -154,6 +161,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         setupActions();
         setupMiniHeaderBehavior();
         setupBottomNavigation();
+        setupGestureDetection();
         refreshAuthHeaderUi();
         initRetrofit();
         fetchListings();
@@ -187,6 +195,10 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         super.onResume();
         refreshAuthHeaderUi();
         syncFavoritesFromServer();
+        // Restore navigation highlight
+        if (currentNavItem != 0) {
+            selectNavItem(currentNavItem);
+        }
     }
 
     @Override
@@ -219,7 +231,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             showLoginDialog();
             return;
         }
+        previousNavItem = currentNavItem;
+        currentNavItem = 1;
         startActivity(new Intent(this, FavoritesActivity.class));
+        // Home(0) → Favorites(1): left to right
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
     private void setupMiniHeaderBehavior() {
@@ -258,21 +274,21 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         navChat = navView.findViewById(R.id.navChat);
         navAccount = navView.findViewById(R.id.navAccount);
 
-        // Set up navigation click listeners with highlight
-        navHome.setOnClickListener(v -> {
-            selectNavItem(0);
-            rvVehicles.smoothScrollToPosition(0);
-        });
-        
-        navFavorites.setOnClickListener(v -> {
-            selectNavItem(1);
-            openFavoritesScreen();
-        });
-        
-        navPost.setOnClickListener(v -> {
-            selectNavItem(2);
-            handlePostAction();
-        });
+            // Set up navigation click listeners with highlight
+            navHome.setOnClickListener(v -> {
+                selectNavItem(0);
+                rvVehicles.smoothScrollToPosition(0);
+            });
+            
+            navFavorites.setOnClickListener(v -> {
+                selectNavItem(1);
+                openFavoritesScreen();
+            });
+            
+            navPost.setOnClickListener(v -> {
+                selectNavItem(2);
+                handlePostAction();
+            });
         
         navChat.setOnClickListener(v -> {
             selectNavItem(3);
@@ -436,7 +452,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             return;
         }
 
+        previousNavItem = currentNavItem;
+        currentNavItem = 2;
         startActivity(new Intent(this, NewsListingsActivity.class));
+        // Home(0) → Post(2): left to right
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
     private void showCategoryMenuDialog() {
@@ -886,5 +906,55 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     @Override
     public void onOpenLoginRequested() {
         showLoginDialog();
+    }
+
+    private void setupGestureDetection() {
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    // Swipe sensitivity check
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe Right - go to previous
+                                onSwipeRight();
+                            } else {
+                                // Swipe Left - go to next
+                                onSwipeLeft();
+                            }
+                            return true;
+                        }
+                    }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestureDetector != null) {
+            gestureDetector.onTouchEvent(event);
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private void onSwipeRight() {
+        // Swipe Right: Home(0) → back is no-op
+        // Do nothing on home screen
+    }
+
+    private void onSwipeLeft() {
+        // Swipe Left: Home(0) → Favorites(1)
+        if (currentNavItem == 0) {
+            selectNavItem(1);
+            openFavoritesScreen();
+        }
     }
 }

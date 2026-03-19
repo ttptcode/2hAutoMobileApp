@@ -402,7 +402,21 @@ public class CreateMotoPostActivity extends AppCompatActivity {
             InputStream inputStream = getContentResolver().openInputStream(fileUri);
             if (inputStream == null) return null;
             
-            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis());
+            // Get original filename to extract extension
+            String originalFileName = getFileNameFromUri(fileUri);
+            android.util.Log.d("VideoUpload", "Original filename: " + originalFileName);
+            
+            // Extract extension from original filename
+            String extension = "";
+            if (originalFileName != null && originalFileName.contains(".")) {
+                extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                android.util.Log.d("VideoUpload", "Extracted extension: " + extension);
+            }
+            
+            // Create temp file with extension
+            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis() + extension);
+            android.util.Log.d("VideoUpload", "Created temp file with extension: " + file.getName());
+            
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
