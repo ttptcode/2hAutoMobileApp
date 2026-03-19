@@ -17,6 +17,7 @@ import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.FeeCommission;
+import com.example.a2hauto.model.UserPackage;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 
@@ -72,17 +73,17 @@ public final class PackageSelectionBottomSheet {
         }
 
         ApiService apiService = ApiClient.getApiService();
-        apiService.getUserPackages("Bearer " + token).enqueue(new Callback<ApiResponse<List<FeeCommission>>>() {
+        apiService.getActiveUserPackages("Bearer " + token).enqueue(new Callback<ApiResponse<List<UserPackage>>>() {
             @Override
-            public void onResponse(@NonNull Call<ApiResponse<List<FeeCommission>>> call,
-                                   @NonNull Response<ApiResponse<List<FeeCommission>>> response) {
+            public void onResponse(@NonNull Call<ApiResponse<List<UserPackage>>> call,
+                                   @NonNull Response<ApiResponse<List<UserPackage>>> response) {
                 if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
                     rvUserPackages.setVisibility(View.GONE);
                     layoutEmptyPackages.setVisibility(View.VISIBLE);
                     return;
                 }
 
-                List<FeeCommission> userPackages = response.body().getData();
+                List<UserPackage> userPackages = response.body().getData();
                 if (userPackages == null || userPackages.isEmpty()) {
                     rvUserPackages.setVisibility(View.GONE);
                     layoutEmptyPackages.setVisibility(View.VISIBLE);
@@ -94,7 +95,7 @@ public final class PackageSelectionBottomSheet {
             }
 
             @Override
-            public void onFailure(@NonNull Call<ApiResponse<List<FeeCommission>>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<ApiResponse<List<UserPackage>>> call, @NonNull Throwable t) {
                 rvUserPackages.setVisibility(View.GONE);
                 layoutEmptyPackages.setVisibility(View.VISIBLE);
                 Toast.makeText(context, "Không thể tải danh sách gói", Toast.LENGTH_SHORT).show();
@@ -106,19 +107,19 @@ public final class PackageSelectionBottomSheet {
 
     private static final class UserPackageAdapter extends RecyclerView.Adapter<UserPackageAdapter.PackageViewHolder> {
 
-        private final List<FeeCommission> packages;
+        private final List<UserPackage> packages;
         private final OnPackageClickListener onPackageClickListener;
 
         interface OnPackageClickListener {
-            void onPackageClick(FeeCommission item);
+            void onPackageClick(UserPackage item);
         }
 
-        UserPackageAdapter(List<FeeCommission> packages, OnPackageClickListener onPackageClickListener) {
+        UserPackageAdapter(List<UserPackage> packages, OnPackageClickListener onPackageClickListener) {
             this.packages = packages;
             this.onPackageClickListener = onPackageClickListener;
         }
 
-        void submitList(List<FeeCommission> newData) {
+        void submitList(List<UserPackage> newData) {
             packages.clear();
             if (newData != null) {
                 packages.addAll(newData);
@@ -135,14 +136,23 @@ public final class PackageSelectionBottomSheet {
 
         @Override
         public void onBindViewHolder(@NonNull PackageViewHolder holder, int position) {
-            FeeCommission item = packages.get(position);
-            holder.tvName.setText(item.getFeeName());
+            UserPackage item = packages.get(position);
+            FeeCommission fee = item.getFeeCommission();
+
+            if (fee == null) {
+                holder.tvName.setText("Gói đăng tin");
+                holder.tvDetail.setText("Không có thông tin gói");
+                holder.itemView.setOnClickListener(v -> onPackageClickListener.onPackageClick(item));
+                return;
+            }
+
+            holder.tvName.setText(fee.getFeeName());
             holder.tvDetail.setText(String.format(
                     Locale.getDefault(),
                     "%s | %,.0f VNĐ | %d ngày",
-                    item.getDescription() == null ? "Gói đăng tin" : item.getDescription(),
-                    item.getAmount(),
-                    item.getPackageDurationDays()
+                    fee.getDescription() == null ? "Gói đăng tin" : fee.getDescription(),
+                    fee.getAmount(),
+                    fee.getPackageDurationDays()
             ));
             holder.itemView.setOnClickListener(v -> onPackageClickListener.onPackageClick(item));
         }

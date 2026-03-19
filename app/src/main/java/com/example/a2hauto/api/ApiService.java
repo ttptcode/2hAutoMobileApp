@@ -2,10 +2,11 @@ package com.example.a2hauto.api;
 
 import com.example.a2hauto.model.auth.LoginRequest;
 import com.example.a2hauto.model.auth.RegisterRequest;
-import com.example.a2hauto.model.FeeCommissionResponse;
 import com.example.a2hauto.model.FeeCommission;
+import com.example.a2hauto.model.FeeCommissionResponse;
 import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
+import com.example.a2hauto.model.UserPackage;
 import com.example.a2hauto.model.UserProfileResponse;
 import com.google.gson.JsonElement;
 import com.example.a2hauto.model.ApiResponse;
@@ -79,9 +80,12 @@ public interface ApiService {
         @GET("api/UserPackages")
         Call<ApiResponse<List<FeeCommission>>> getUserPackages(@Header("Authorization") String token);
 
-    @GET("api/Users/{id}")
-    Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
-
         @GET("api/FeeCommissions")
         Call<FeeCommissionResponse> getPackages(@Header("Authorization") String token);
+
+        @GET("api/UserPackages/active")
+        Call<ApiResponse<List<UserPackage>>> getActiveUserPackages(@Header("Authorization") String token);
+
+    @GET("api/Users/{id}")
+    Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
 }

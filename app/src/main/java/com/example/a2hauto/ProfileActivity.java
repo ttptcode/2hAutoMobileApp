@@ -17,6 +17,9 @@ import androidx.core.content.ContextCompat;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.FeeCommission;
+import com.example.a2hauto.model.UserPackage;
 import com.example.a2hauto.model.UserProfile;
 import com.example.a2hauto.model.UserProfileResponse;
 import com.google.android.material.button.MaterialButton;
@@ -27,6 +30,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -47,8 +51,17 @@ public class ProfileActivity extends AppCompatActivity {
     private View indicatorPackages;
     private View layoutPersonalInfo;
     private View layoutPackages;
+    private View layoutEmptyPackage;
+    private View layoutActivePackage;
     private MaterialButton btnViewPackages;
+    private MaterialButton btnUpgradePackage;
     private MaterialButton btnUpdateProfile;
+    private TextView tvPackageName;
+    private TextView tvPackageDesc;
+    private TextView tvRemainingListings;
+    private TextView tvPackagePrice;
+    private TextView tvActivationDate;
+    private TextView tvExpirationDate;
 
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
@@ -69,8 +82,17 @@ public class ProfileActivity extends AppCompatActivity {
         indicatorPackages = findViewById(R.id.indicatorPackages);
         layoutPersonalInfo = findViewById(R.id.layoutPersonalInfo);
         layoutPackages = findViewById(R.id.layoutPackages);
+        layoutEmptyPackage = findViewById(R.id.layoutEmptyPackage);
+        layoutActivePackage = findViewById(R.id.layoutActivePackage);
         btnViewPackages = findViewById(R.id.btnViewPackages);
+        btnUpgradePackage = findViewById(R.id.btnUpgradePackage);
         btnUpdateProfile = findViewById(R.id.btnUpdateProfile);
+        tvPackageName = findViewById(R.id.tvPackageName);
+        tvPackageDesc = findViewById(R.id.tvPackageDesc);
+        tvRemainingListings = findViewById(R.id.tvRemainingListings);
+        tvPackagePrice = findViewById(R.id.tvPackagePrice);
+        tvActivationDate = findViewById(R.id.tvActivationDate);
+        tvExpirationDate = findViewById(R.id.tvExpirationDate);
 
         authSessionManager = new AuthSessionManager(this);
         apiService = ApiClient.getApiService();
@@ -87,7 +109,9 @@ public class ProfileActivity extends AppCompatActivity {
         setupTabs();
         btnUpdateProfile.setOnClickListener(v -> showUpdateProfileDialog());
         btnViewPackages.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
+        btnUpgradePackage.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
         loadUserProfile();
+        fetchUserPackages();
     }
 
     private void showUpdateProfileDialog() {
@@ -323,6 +347,57 @@ public class ProfileActivity extends AppCompatActivity {
         tvProfileCreatedAtValue.setText(TextUtils.isEmpty(formattedCreatedAt) ? "Chưa cập nhật" : formattedCreatedAt);
     }
 
+    private void fetchUserPackages() {
+        String token = authSessionManager.getAuthToken();
+        if (TextUtils.isEmpty(token)) {
+            showEmptyPackageState();
+            return;
+        }
+
+        apiService.getActiveUserPackages("Bearer " + token).enqueue(new Callback<ApiResponse<List<UserPackage>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<UserPackage>>> call, Response<ApiResponse<List<UserPackage>>> response) {
+                if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
+                    showEmptyPackageState();
+                    return;
+                }
+
+                List<UserPackage> list = response.body().getData();
+                if (list == null || list.isEmpty()) {
+                    showEmptyPackageState();
+                    return;
+                }
+
+                UserPackage pkg = list.get(0);
+                FeeCommission fee = pkg.getFeeCommission();
+                if (fee == null) {
+                    showEmptyPackageState();
+                    return;
+                }
+
+                layoutActivePackage.setVisibility(View.VISIBLE);
+                layoutEmptyPackage.setVisibility(View.GONE);
+
+                tvPackageName.setText(TextUtils.isEmpty(fee.getFeeName()) ? "Gói đăng tin" : fee.getFeeName());
+                tvPackageDesc.setText(TextUtils.isEmpty(fee.getDescription()) ? "" : fee.getDescription());
+                tvRemainingListings.setText(pkg.getRemainingListings() + "/" + fee.getMaxListings());
+                tvPackagePrice.setText(String.format(new Locale("vi", "VN"), "%,.0f VNĐ", pkg.getTotalAmount()));
+                tvActivationDate.setText("Kích hoạt: " + formatDate(pkg.getActivatedAt()));
+                tvExpirationDate.setText(formatDate(pkg.getExpiredAt()));
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<UserPackage>>> call, Throwable t) {
+                showEmptyPackageState();
+            }
+        });
+    }
+
+    private void showEmptyPackageState() {
+        layoutEmptyPackage.setVisibility(View.VISIBLE);
+        layoutActivePackage.setVisibility(View.GONE);
+    }
+
     private String formatCreatedAtVietnamese(String createdAt) {
         if (TextUtils.isEmpty(createdAt)) {
             return "";
@@ -361,5 +436,38 @@ public class ProfileActivity extends AppCompatActivity {
 
         SimpleDateFormat output = new SimpleDateFormat("'Lúc' HH:mm dd 'tháng' MM, yyyy", new Locale("vi", "VN"));
         return output.format(parsedDate);
+    }
+
+    private String formatDate(String isoDate) {
+        if (TextUtils.isEmpty(isoDate)) {
+            return "--/--/----";
+        }
+
+        String[] patterns = new String[] {
+                "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+                "yyyy-MM-dd'T'HH:mm:ssXXX",
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",
+                "yyyy-MM-dd'T'HH:mm:ss",
+                "yyyy-MM-dd HH:mm:ss"
+        };
+
+        for (String pattern : patterns) {
+            try {
+                SimpleDateFormat input = new SimpleDateFormat(pattern, Locale.US);
+                input.setLenient(false);
+                if (pattern.endsWith("'Z'")) {
+                    input.setTimeZone(TimeZone.getTimeZone("UTC"));
+                }
+                Date date = input.parse(isoDate);
+                if (date != null) {
+                    return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date);
+                }
+            } catch (ParseException ignored) {
+            }
+        }
+
+        return "--/--/----";
     }
 }
