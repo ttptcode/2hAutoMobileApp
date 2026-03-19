@@ -59,6 +59,10 @@
             android:name=".CreateBatteryPostActivity"
             android:exported="false"
             android:label="Đăng tin bình điện" />
+        <activity
+            android:name=".FavoritesActivity"
+            android:exported="false"
+            android:label="Yêu thích" />
     </application>
 
 </manifest>

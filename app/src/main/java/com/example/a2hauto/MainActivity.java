@@ -28,12 +28,15 @@ import com.example.a2hauto.auth.AuthSessionManager;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
 import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.Listing;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import retrofit2.Call;
@@ -63,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private AppBarLayout appBarLayout;
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
+    private final Set<String> cachedFavoriteListingIds = new HashSet<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,9 +106,10 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         refreshAuthHeaderUi();
         initRetrofit();
         fetchListings();
+        syncFavoritesFromServer();
     }
 
-    private void setupActions() {
+       private void setupActions() {
         findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
         findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showCategoryMenuDialog());
@@ -122,10 +127,20 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
     }
 
+
     @Override
     protected void onResume() {
         super.onResume();
         refreshAuthHeaderUi();
+        syncFavoritesFromServer();
+    }
+
+    private void openFavoritesScreen() {
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+        startActivity(new Intent(this, FavoritesActivity.class));
     }
 
     private void setupMiniHeaderBehavior() {
@@ -342,6 +357,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
     private void updateListingUi(List<Listing> activeListings) {
         adapter.setListings(activeListings);
+        adapter.setFavoriteListingIds(cachedFavoriteListingIds);
         tvListingCount.setText(getString(R.string.listing_count_format, activeListings.size()));
         tvMiniListingCount.setText(getString(R.string.listing_count_format, activeListings.size()));
         tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
@@ -350,6 +366,58 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         rvVehicles.setVisibility(isEmpty ? View.INVISIBLE : View.VISIBLE);
 
+    }
+
+    private void syncFavoritesFromServer() {
+        String userId = authSessionManager.getUserId();
+        if (TextUtils.isEmpty(userId)) {
+            if (!cachedFavoriteListingIds.isEmpty()) {
+                for (String listingId : new HashSet<>(cachedFavoriteListingIds)) {
+                    adapter.updateFavoriteState(listingId, false);
+                }
+                cachedFavoriteListingIds.clear();
+            }
+            return;
+        }
+
+        apiService.getFavoritesByUser(userId).enqueue(new Callback<ApiResponse<List<FavoriteItem>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<FavoriteItem>>> call,
+                                   Response<ApiResponse<List<FavoriteItem>>> response) {
+                if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
+                    return;
+                }
+
+                List<FavoriteItem> favoriteItems = response.body().getData() == null
+                        ? new ArrayList<>()
+                        : response.body().getData();
+                Set<String> latestFavoriteIds = favoriteItems.stream()
+                        .map(FavoriteItem::getListingId)
+                        .filter(id -> !TextUtils.isEmpty(id))
+                        .collect(Collectors.toSet());
+
+                Set<String> staleIds = new HashSet<>(cachedFavoriteListingIds);
+                staleIds.removeAll(latestFavoriteIds);
+                for (String listingId : staleIds) {
+                    adapter.updateFavoriteState(listingId, false);
+                }
+
+                Set<String> addedIds = new HashSet<>(latestFavoriteIds);
+                addedIds.removeAll(cachedFavoriteListingIds);
+                for (String listingId : addedIds) {
+                    adapter.updateFavoriteState(listingId, true);
+                }
+
+                cachedFavoriteListingIds.clear();
+                cachedFavoriteListingIds.addAll(latestFavoriteIds);
+                adapter.setFavoriteListingIds(cachedFavoriteListingIds);
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<FavoriteItem>>> call, Throwable t) {
+                Log.w(TAG, "Favorite sync failed: " + t.getMessage());
+            }
+        });
     }
 
     @Override

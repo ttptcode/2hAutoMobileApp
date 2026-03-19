@@ -108,7 +108,7 @@
                         android:textStyle="bold"
                         app:backgroundTint="@color/accent_yellow"
                         app:cornerRadius="14dp"
-                        app:icon="@android:drawable/btn_star_big_on"
+                        app:icon="@drawable/ic_heart_outline"
                         app:iconGravity="textStart"
                         app:iconPadding="4dp"
                         app:iconTint="@color/text_primary" />

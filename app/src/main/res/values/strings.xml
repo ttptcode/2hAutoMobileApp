@@ -120,4 +120,15 @@
     <string name="upgrade_free_features">- Đăng tối đa 3 tin/tháng\n- Hiển thị tiêu chuẩn\n- Hỗ trợ cơ bản</string>
     <string name="upgrade_pro_title">Gói Pro (gợi ý)</string>
     <string name="upgrade_pro_features">- Đăng tin không giới hạn\n- Ưu tiên hiển thị ở đầu danh sách\n- Bộ huy hiệu "Pro Seller" + thống kê chi tiết\n- Ưu tiên hỗ trợ nhanh</string>
+    <string name="favorite_selection_mode">Chọn nhiều</string>
+    <string name="favorite_selection_done">Xong</string>
+    <string name="favorite_selected_count">Đã chọn %1$d mục</string>
+    <string name="favorite_selected_count_default">Đã chọn 0 mục</string>
+    <string name="favorite_delete_selected">Xóa đã chọn</string>
+    <string name="favorite_empty">Bạn chưa có tin yêu thích nào.</string>
+    <string name="favorite_load_failed">Không thể tải danh sách yêu thích.</string>
+    <string name="favorite_removed">Đã xóa khỏi yêu thích.</string>
+    <string name="favorite_action_failed">Không thể cập nhật mục yêu thích.</string>
+    <string name="favorite_deleted_count">Đã xóa %1$d mục yêu thích.</string>
+    <string name="favorite_login_required">Vui lòng đăng nhập để dùng mục yêu thích.</string>
 </resources>
