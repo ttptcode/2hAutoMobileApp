@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -65,6 +66,12 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private TextView tvNavAccountLabel;
     private View miniHeaderCard;
     private AppBarLayout appBarLayout;
+    private FrameLayout bottomNavContainer;
+    
+    // Navbar items
+    private LinearLayout navHome, navFavorites, navPost, navChat, navAccount;
+    private int currentNavItem = 0; // 0=Home, 1=Favorites, 2=Post, 3=Chat, 4=Account
+    
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
     private final Set<String> cachedFavoriteListingIds = new HashSet<>();
@@ -91,10 +98,9 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         btnMiniHeaderLogin = findViewById(R.id.btnMiniHeaderLogin);
         tvHeaderAvatar = findViewById(R.id.tvHeaderAvatar);
         tvMiniHeaderAvatar = findViewById(R.id.tvMiniHeaderAvatar);
-        ivNavAccountIcon = findViewById(R.id.ivNavAccountIcon);
-        tvNavAccountLabel = findViewById(R.id.tvNavAccountLabel);
         miniHeaderCard = findViewById(R.id.miniHeaderCard);
         appBarLayout = findViewById(R.id.appBarLayout);
+        bottomNavContainer = findViewById(R.id.bottomNavContainer);
         authSessionManager = new AuthSessionManager(this);
 
         rvVehicles.setLayoutManager(new LinearLayoutManager(this));
@@ -104,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
         setupActions();
         setupMiniHeaderBehavior();
+        setupBottomNavigation();
         refreshAuthHeaderUi();
         initRetrofit();
         fetchListings();
@@ -121,11 +128,6 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         btnMiniHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         tvMiniHeaderAvatar.setOnClickListener(v -> handleAccountAction());
-        findViewById(R.id.navHome).setOnClickListener(v -> rvVehicles.smoothScrollToPosition(0));
-        findViewById(R.id.navFavorites).setOnClickListener(v -> openFavoritesScreen());
-        findViewById(R.id.navChat).setOnClickListener(v -> showComingSoon(getString(R.string.nav_chat)));
-        findViewById(R.id.navPost).setOnClickListener(v -> handlePostAction());
-        findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
     }
 
 
@@ -163,6 +165,136 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         miniHeaderCard.setVisibility(progress > 0.01f ? View.VISIBLE : View.INVISIBLE);
         miniHeaderCard.setAlpha(progress);
         miniHeaderCard.setTranslationY((1f - progress) * -20f);
+    }
+
+    private void setupBottomNavigation() {
+        // Inflate the bottom navigation bar layout
+        View navView = getLayoutInflater().inflate(R.layout.bottom_navigation_bar, bottomNavContainer, true);
+
+        // Initialize nav account icon and label from inflated view
+        ivNavAccountIcon = navView.findViewById(R.id.ivNavAccountIcon);
+        tvNavAccountLabel = navView.findViewById(R.id.tvNavAccountLabel);
+
+        // Get references to all nav items
+        navHome = navView.findViewById(R.id.navHome);
+        navFavorites = navView.findViewById(R.id.navFavorites);
+        navPost = navView.findViewById(R.id.navPost);
+        navChat = navView.findViewById(R.id.navChat);
+        navAccount = navView.findViewById(R.id.navAccount);
+
+        // Set up navigation click listeners with highlight
+        navHome.setOnClickListener(v -> {
+            selectNavItem(0);
+            rvVehicles.smoothScrollToPosition(0);
+        });
+        
+        navFavorites.setOnClickListener(v -> {
+            selectNavItem(1);
+            openFavoritesScreen();
+        });
+        
+        navPost.setOnClickListener(v -> {
+            selectNavItem(2);
+            handlePostAction();
+        });
+        
+        navChat.setOnClickListener(v -> {
+            selectNavItem(3);
+            showComingSoon(getString(R.string.nav_chat));
+        });
+        
+        navAccount.setOnClickListener(v -> {
+            selectNavItem(4);
+            handleAccountAction();
+        });
+        
+        // Set initial highlight
+        selectNavItem(0);
+    }
+
+    private void selectNavItem(int navIndex) {
+        // Remove highlight from all items
+        resetAllNavItems();
+        
+        // Highlight selected item
+        currentNavItem = navIndex;
+        LinearLayout selectedNav = null;
+        
+        switch (navIndex) {
+            case 0:
+                selectedNav = navHome;
+                break;
+            case 1:
+                selectedNav = navFavorites;
+                break;
+            case 2:
+                selectedNav = navPost;
+                break;
+            case 3:
+                selectedNav = navChat;
+                break;
+            case 4:
+                selectedNav = navAccount;
+                break;
+        }
+        
+        if (selectedNav != null) {
+            highlightNavItem(selectedNav);
+        }
+    }
+
+    private void resetAllNavItems() {
+        if (navHome != null) unhighlightNavItem(navHome);
+        if (navFavorites != null) unhighlightNavItem(navFavorites);
+        if (navPost != null) unhighlightNavItem(navPost);
+        if (navChat != null) unhighlightNavItem(navChat);
+        if (navAccount != null) unhighlightNavItem(navAccount);
+    }
+
+    private void highlightNavItem(LinearLayout navItem) {
+        // Add scale animation for transition
+        navItem.animate()
+                .scaleX(1.05f)
+                .scaleY(1.05f)
+                .setDuration(200)
+                .start();
+        
+        // Set background and update colors
+        navItem.setBackgroundResource(R.drawable.bg_nav_active);
+        
+        // Update icon and text color for highlighted state
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            android.view.View child = navItem.getChildAt(i);
+            if (child instanceof ImageView) {
+                ((ImageView) child).setColorFilter(ContextCompat.getColor(this, R.color.primary_teal_dark), android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof TextView) {
+                ((TextView) child).setTextColor(ContextCompat.getColor(this, R.color.primary_teal_dark));
+                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.BOLD);
+            }
+        }
+    }
+
+    private void unhighlightNavItem(LinearLayout navItem) {
+        // Reset scale animation
+        navItem.animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(200)
+                .start();
+        
+        // Remove background
+        navItem.setBackground(null);
+        
+        // Reset icon and text color for unhighlighted state
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            android.view.View child = navItem.getChildAt(i);
+            if (child instanceof ImageView) {
+                ((ImageView) child).setColorFilter(ContextCompat.getColor(this, R.color.text_muted), android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof TextView) {
+                ((TextView) child).setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.NORMAL);
+            }
+        }
     }
 
     private void handleAccountAction() {

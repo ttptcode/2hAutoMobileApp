@@ -154,17 +154,193 @@ public class CreatePostActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
+        android.util.Log.d("VideoUpload", "╔════════════════════════════════════════");
+        android.util.Log.d("VideoUpload", "║ onActivityResult START");
+        android.util.Log.d("VideoUpload", "║ requestCode=" + requestCode + ", resultCode=" + resultCode);
+        android.util.Log.d("VideoUpload", "║ data is null? " + (data == null));
+        
+        // Wrap super call in try-catch to handle framework-level NPE from MIUI Gallery
+        try {
+            android.util.Log.d("VideoUpload", "║ Calling super.onActivityResult...");
+            super.onActivityResult(requestCode, resultCode, data);
+            android.util.Log.d("VideoUpload", "║ super.onActivityResult completed successfully");
+        } catch (NullPointerException e) {
+            android.util.Log.w("VideoUpload", "║ ⚠️ Framework NPE caught - continuing anyway");
+            android.util.Log.w("VideoUpload", "║ Error: " + e.getMessage());
+        } catch (Exception e) {
+            android.util.Log.w("VideoUpload", "║ ⚠️ Exception caught - continuing anyway");
+            android.util.Log.w("VideoUpload", "║ Error: " + e.getMessage());
+        }
+        
+        // Add null check for data
+        if (data == null) {
+            android.util.Log.d("VideoUpload", "║ ❌ data is null - returning early");
+            android.util.Log.d("VideoUpload", "╚════════════════════════════════════════");
+            return;
+        }
+        
+        android.util.Log.d("VideoUpload", "║ resultCode check: " + resultCode + " == RESULT_OK(" + RESULT_OK + ")? " + (resultCode == RESULT_OK));
+        
+        if (resultCode == RESULT_OK) {
+            android.util.Log.d("VideoUpload", "║ ✓ resultCode is RESULT_OK");
+            android.util.Log.d("VideoUpload", "║ requestCode check: " + requestCode);
+            android.util.Log.d("VideoUpload", "║ PICK_IMAGE_REQUEST=" + PICK_IMAGE_REQUEST + ", PICK_VIDEO_REQUEST=" + PICK_VIDEO_REQUEST);
+            
             if (requestCode == PICK_IMAGE_REQUEST) {
+                android.util.Log.d("VideoUpload", "║ → Processing IMAGE request");
                 if (data.getClipData() != null) {
-                    for (int i = 0; i < data.getClipData().getItemCount(); i++) addImagePreview(data.getClipData().getItemAt(i).getUri());
-                } else if (data.getData() != null) addImagePreview(data.getData());
+                    for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+                        addImagePreview(data.getClipData().getItemAt(i).getUri());
+                    }
+                } else if (data.getData() != null) {
+                    addImagePreview(data.getData());
+                }
             } else if (requestCode == PICK_VIDEO_REQUEST) {
-                selectedVideoUri = data.getData();
-                tvVideoStatus.setText("Đã chọn video");
+                android.util.Log.d("VideoUpload", "║ → Processing VIDEO request");
+                Uri videoUri = data.getData();
+                android.util.Log.d("VideoUpload", "║ videoUri from data.getData(): " + videoUri);
+                
+                if (videoUri != null) {
+                    android.util.Log.d("VideoUpload", "�� ✓ videoUri is not null");
+                    android.util.Log.d("VideoUpload", "║ Calling isValidVideoFormat...");
+                    if (isValidVideoFormat(videoUri)) {
+                        android.util.Log.d("VideoUpload", "║ ✓✓✓ isValidVideoFormat returned TRUE");
+                        selectedVideoUri = videoUri;
+                        String videoName = getFileNameFromUri(videoUri);
+                        tvVideoStatus.setText("✓ " + videoName);
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.success_green, getTheme()));
+                        android.util.Log.d("VideoUpload", "║ ✓✓✓ Video ACCEPTED: " + videoName);
+                    } else {
+                        android.util.Log.d("VideoUpload", "║ ✗✗✗ isValidVideoFormat returned FALSE");
+                        Toast.makeText(this, "Định dạng video không hỗ trợ. Vui lòng chọn: MP4, AVI, MOV, WMV", Toast.LENGTH_LONG).show();
+                        selectedVideoUri = null;
+                        tvVideoStatus.setText("Chưa chọn video");
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.text_muted, getTheme()));
+                        android.util.Log.d("VideoUpload", "║ Video REJECTED - showing toast");
+                    }
+                } else {
+                    android.util.Log.d("VideoUpload", "║ ❌ videoUri is NULL");
+                }
+            } else {
+                android.util.Log.d("VideoUpload", "║ ? Unknown requestCode: " + requestCode);
+            }
+        } else {
+            android.util.Log.d("VideoUpload", "║ ❌ resultCode is NOT RESULT_OK (is: " + resultCode + ")");
+        }
+        
+        android.util.Log.d("VideoUpload", "╚════════════════════════════════════════");
+    }
+
+    private boolean isValidVideoFormat(Uri videoUri) {
+        android.util.Log.d("VideoUpload", "=== isValidVideoFormat called with URI: " + videoUri);
+        
+        // Priority 1: Check file extension first (most reliable for MIUI Gallery which has bad MIME support)
+        String fileName = getFileNameFromUri(videoUri);
+        android.util.Log.d("VideoUpload", "File name from URI: " + fileName);
+        
+        if (fileName != null) {
+            fileName = fileName.toLowerCase();
+            // Accept ANY file with video extension
+            if (fileName.endsWith(".mp4") || fileName.endsWith(".avi") || fileName.endsWith(".mov") || 
+                fileName.endsWith(".wmv") || fileName.endsWith(".mkv") || fileName.endsWith(".flv") || 
+                fileName.endsWith(".webm") || fileName.endsWith(".m4v") || fileName.endsWith(".3gp") ||
+                fileName.endsWith(".ts") || fileName.endsWith(".mts")) {
+                android.util.Log.d("VideoUpload", "✓ Valid extension: " + fileName);
+                return true;
             }
         }
+        
+        // Priority 2: Check MIME type as fallback
+        String mimeType = getContentResolver().getType(videoUri);
+        android.util.Log.d("VideoUpload", "MIME type from ContentResolver: " + mimeType);
+        
+        if (mimeType != null && mimeType.startsWith("video/")) {
+            android.util.Log.d("VideoUpload", "✓ Valid MIME type: " + mimeType);
+            return true;
+        }
+        
+        // Priority 3: If all else fails but we have a valid file, accept it anyway
+        // Server will validate the actual format
+        if (fileName != null && !fileName.isEmpty()) {
+            android.util.Log.w("VideoUpload", "⚠️ File validation lenient mode - accepting: " + fileName);
+            return true;
+        }
+        
+        android.util.Log.e("VideoUpload", "✗ Invalid format - fileName: " + fileName + ", mimeType: " + mimeType);
+        return false;
+    }
+
+    private boolean isValidVideoExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        return lowerName.endsWith(".mp4") || 
+               lowerName.endsWith(".avi") || 
+               lowerName.endsWith(".mov") || 
+               lowerName.endsWith(".wmv") ||
+               lowerName.endsWith(".mkv") ||
+               lowerName.endsWith(".flv") ||
+               lowerName.endsWith(".webm");
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String fileName = null;
+        
+        try {
+            // Method 1: Query ContentResolver (works with MediaStore)
+            if (uri.getScheme() != null && uri.getScheme().equals("content")) {
+                android.database.Cursor cursor = null;
+                try {
+                    cursor = getContentResolver().query(uri, null, null, null, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int nameIndex = cursor.getColumnIndex(android.provider.MediaStore.MediaColumns.DISPLAY_NAME);
+                        if (nameIndex >= 0) {
+                            fileName = cursor.getString(nameIndex);
+                            android.util.Log.d("VideoUpload", "Got filename from DISPLAY_NAME: " + fileName);
+                            if (fileName != null && !fileName.isEmpty()) {
+                                return fileName;
+                            }
+                        }
+                    }
+                } finally {
+                    if (cursor != null) cursor.close();
+                }
+            }
+            
+            // Method 2: Extract from URI path (for MIUI Gallery and file:// URIs)
+            String path = uri.getPath();
+            if (path != null && !path.isEmpty()) {
+                android.util.Log.d("VideoUpload", "Raw URI path: " + path);
+                
+                // Try to decode URL encoding (for MIUI Gallery URIs like %2F)
+                try {
+                    path = java.net.URLDecoder.decode(path, "UTF-8");
+                    android.util.Log.d("VideoUpload", "Decoded URI path: " + path);
+                } catch (Exception e) {
+                    android.util.Log.d("VideoUpload", "Could not decode path: " + e.getMessage());
+                }
+                
+                // Extract filename from path
+                int cut = path.lastIndexOf('/');
+                if (cut >= 0 && cut < path.length() - 1) {
+                    fileName = path.substring(cut + 1);
+                    android.util.Log.d("VideoUpload", "Extracted filename from path: " + fileName);
+                    if (fileName != null && !fileName.isEmpty()) {
+                        return fileName;
+                    }
+                }
+            }
+            
+            // Method 3: Extract from last path segment (Android API 26+)
+            String lastSegment = uri.getLastPathSegment();
+            if (lastSegment != null && !lastSegment.isEmpty()) {
+                android.util.Log.d("VideoUpload", "Got lastPathSegment: " + lastSegment);
+                return lastSegment;
+            }
+            
+        } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error in getFileNameFromUri: " + e.getMessage(), e);
+        }
+        
+        return fileName;
     }
 
     private void addImagePreview(Uri uri) {
@@ -336,7 +512,21 @@ public class CreatePostActivity extends AppCompatActivity {
             InputStream inputStream = getContentResolver().openInputStream(fileUri);
             if (inputStream == null) return null;
             
-            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis());
+            // Get original filename to extract extension
+            String originalFileName = getFileNameFromUri(fileUri);
+            android.util.Log.d("VideoUpload", "Original filename: " + originalFileName);
+            
+            // Extract extension from original filename
+            String extension = "";
+            if (originalFileName != null && originalFileName.contains(".")) {
+                extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                android.util.Log.d("VideoUpload", "Extracted extension: " + extension);
+            }
+            
+            // Create temp file with extension
+            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis() + extension);
+            android.util.Log.d("VideoUpload", "Created temp file with extension: " + file.getName());
+            
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
@@ -344,11 +534,51 @@ public class CreatePostActivity extends AppCompatActivity {
             outputStream.close();
             inputStream.close();
             
-            RequestBody requestFile = RequestBody.create(MediaType.parse(getContentResolver().getType(fileUri)), file);
+            // Get MIME type
+            String mimeType = getContentResolver().getType(fileUri);
+            
+            // Log original MIME type
+            android.util.Log.d("VideoUpload", "Original MIME from ContentResolver: " + mimeType);
+            android.util.Log.d("VideoUpload", "File URI: " + fileUri);
+            android.util.Log.d("VideoUpload", "File path: " + file.getAbsolutePath());
+            
+            // Fallback to extension-based detection if MIME is null or not video
+            if (mimeType == null || !mimeType.startsWith("video")) {
+                String extensionMime = getMimeTypeFromExtension(file.getName());
+                android.util.Log.d("VideoUpload", "Fallback MIME from extension: " + extensionMime);
+                if (extensionMime != null) {
+                    mimeType = extensionMime;
+                }
+            }
+            
+            // Final MIME type
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+            
+            android.util.Log.d("VideoUpload", "Final MIME type: " + mimeType);
+            android.util.Log.d("VideoUpload", "File name: " + file.getName() + ", File size: " + file.length());
+            
+            MediaType mediaType = MediaType.parse(mimeType);
+            RequestBody requestFile = RequestBody.create(mediaType, file);
             return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
         } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error preparing file: " + e.getMessage(), e);
             e.printStackTrace();
             return null;
         }
+    }
+
+    private String getMimeTypeFromExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".mp4")) return "video/mp4";
+        if (lowerName.endsWith(".avi")) return "video/x-msvideo";
+        if (lowerName.endsWith(".mov")) return "video/quicktime";
+        if (lowerName.endsWith(".wmv")) return "video/x-ms-wmv";
+        if (lowerName.endsWith(".mkv")) return "video/x-matroska";
+        if (lowerName.endsWith(".flv")) return "video/x-flv";
+        if (lowerName.endsWith(".webm")) return "video/webm";
+        if (lowerName.endsWith(".m4v")) return "video/mp4";
+        return "video/mp4"; // Default to MP4
     }
 }

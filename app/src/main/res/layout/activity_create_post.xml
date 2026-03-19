@@ -100,20 +100,44 @@
                 android:layout_height="100dp"
                 android:layout_marginTop="8dp"
                 android:background="#F5F5F5">
-                <ImageButton
-                    android:id="@+id/btnAddVideo"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="?attr/selectableItemBackground"
-                    android:src="@android:drawable/ic_menu_slideshow" />
-                <TextView
-                    android:id="@+id/tvVideoStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:layout_marginBottom="10dp"
-                    android:text="Chưa chọn video"
-                    android:textColor="#9E9E9E" />
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    <ImageButton
+                        android:id="@+id/btnAddVideo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="?attr/selectableItemBackground"
+                        android:src="@android:drawable/ic_menu_slideshow" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center|bottom"
+                    android:padding="10dp">
+                    <ImageView
+                        android:id="@+id/ivVideoThumbnail"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:layout_marginBottom="8dp"
+                        android:src="@android:drawable/ic_menu_slideshow"
+                        android:scaleType="centerInside"
+                        android:visibility="gone"
+                        android:tint="#00BFA5" />
+                    <TextView
+                        android:id="@+id/tvVideoStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:text="Chưa chọn video"
+                        android:textColor="#9E9E9E"
+                        android:textSize="13sp"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+                </LinearLayout>
             </FrameLayout>
 
             <TextView
