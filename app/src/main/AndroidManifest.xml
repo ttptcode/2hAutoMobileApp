@@ -71,6 +71,10 @@
             android:name=".ProfileActivity"
             android:exported="false"
             android:label="Tài khoản" />
+        <activity
+            android:name=".PlanActivity"
+            android:exported="false"
+            android:label="Chọn gói dịch vụ" />
     </application>
 
 </manifest>
