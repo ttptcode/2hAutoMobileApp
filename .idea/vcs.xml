@@ -2,5 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/FE_2hand_Battery_Trading_Platform-develop/FE_2hand_Battery_Trading_Platform-develop" vcs="Git" />
   </component>
 </project>
