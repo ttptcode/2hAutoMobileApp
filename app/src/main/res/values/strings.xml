@@ -5,6 +5,7 @@
     <string name="mini_header_subtitle">Mẫu xe mới cập nhật hôm nay</string>
     <string name="search_hint">Tìm sedan, SUV, xe điện…</string>
     <string name="mini_search_hint">Tìm xe nhanh</string>
+    <string name="category_all">Tất cả</string>
     <string name="category_car">Ô tô</string>
     <string name="category_motorbike">Xe máy</string>
     <string name="category_electric">Xe điện</string>
@@ -12,6 +13,15 @@
     <string name="listing_count_format">%1$d tin đang mở bán</string>
     <string name="featured_section_title">Mẫu xe nổi bật</string>
     <string name="featured_section_subtitle">Danh sách xe mới cập nhật từ hệ thống 2H Auto.</string>
+    <string name="home_search_dialog_title">Tìm kiếm xe</string>
+    <string name="home_search_input_hint">Nhập tên xe, hãng, địa chỉ...</string>
+    <string name="home_filter_all">Tất cả danh mục</string>
+    <string name="home_filter_menu_title">Lọc danh mục</string>
+    <string name="home_search_clear">Xóa nội dung tìm kiếm</string>
+    <string name="home_filter_result_with_category">Đang lọc: %1$s</string>
+    <string name="home_filter_result_with_search">Kết quả cho "%1$s"</string>
+    <string name="home_filter_result_with_both">%1$s • từ khóa "%2$s"</string>
+    <string name="home_empty_filtered">Không tìm thấy kết quả phù hợp bộ lọc hiện tại.</string>
     <string name="nav_home">Trang chủ</string>
     <string name="nav_favorites">Yêu thích</string>
     <string name="news_title">Danh sách bài đăng</string>
@@ -129,6 +139,10 @@
     <string name="detail_other_products">Sản phẩm khác</string>
     <string name="detail_other_products_subtitle">Khám phá thêm tin đăng tương tự</string>
     <string name="detail_other_products_empty">Hiện chưa có sản phẩm liên quan.</string>
+    <string name="detail_media_previous">Ảnh/video trước</string>
+    <string name="detail_media_next">Ảnh/video tiếp theo</string>
+    <string name="detail_media_indicator_format">%1$d/%2$d</string>
+    <string name="detail_video_toggle">Phát hoặc tạm dừng video</string>
     <string name="favorite_add">Thêm vào mục yêu thích</string>
     <string name="favorite_remove">Bỏ khỏi mục yêu thích</string>
     <string name="login_dialog_title">Đăng nhập</string>
