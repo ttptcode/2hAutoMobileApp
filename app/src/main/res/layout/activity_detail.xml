@@ -68,7 +68,7 @@
                 android:backgroundTint="@color/favorite_soft"
                 android:contentDescription="@string/header_favorite"
                 android:padding="12dp"
-                android:src="@drawable/ic_heart_outline"
+                android:src="@drawable/ic_favorite_heart_outline"
                 android:tint="@color/favorite_tint" />
 
             <com.google.android.material.button.MaterialButton
@@ -228,6 +228,48 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             tools:text="Người đăng: 2H Auto\nĐịa chỉ: TP. Thủ Đức" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnDetailChat"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="42dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:minHeight="42dp"
+                                android:text="@string/detail_chat_button"
+                                android:textAllCaps="false"
+                                android:textSize="13sp"
+                                app:cornerRadius="14dp"
+                                app:icon="@android:drawable/sym_action_chat"
+                                app:iconGravity="textStart"
+                                app:iconPadding="6dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnDetailContact"
+                                style="@style/Widget.Material3.Button"
+                                android:layout_width="0dp"
+                                android:layout_height="42dp"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:minHeight="42dp"
+                                android:text="@string/detail_contact_button"
+                                android:textAllCaps="false"
+                                android:textSize="13sp"
+                                app:cornerRadius="14dp"
+                                app:icon="@android:drawable/ic_menu_call"
+                                app:iconGravity="textStart"
+                                app:iconPadding="6dp" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

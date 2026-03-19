@@ -98,7 +98,7 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(holder.ivVehicle);
 
-        holder.ivFavoriteBadge.setOnClickListener(v -> {
+        holder.favoriteActionView.setOnClickListener(v -> {
             String listingId = listing.getListingId();
             if (TextUtils.isEmpty(listingId)) {
                 Toast.makeText(holder.itemView.getContext(), R.string.favorite_action_failed, Toast.LENGTH_SHORT).show();
@@ -228,14 +228,14 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
 
     public static class VehicleViewHolder extends RecyclerView.ViewHolder {
         ImageView ivVehicle;
-        ImageView ivFavoriteBadge;
+        ImageView favoriteActionView;
         AppCompatCheckBox cbSelectFavorite;
         TextView tvName, tvPrice, tvSpecs, tvAddress, tvSummary;
 
         public VehicleViewHolder(@NonNull View itemView) {
             super(itemView);
             ivVehicle = itemView.findViewById(R.id.ivVehicle);
-            ivFavoriteBadge = itemView.findViewById(R.id.ivFavoriteBadge);
+            favoriteActionView = itemView.findViewById(R.id.ivFavoriteBadge);
             cbSelectFavorite = itemView.findViewById(R.id.cbSelectFavorite);
             tvName = itemView.findViewById(R.id.tvName);
             tvPrice = itemView.findViewById(R.id.tvPrice);
@@ -246,13 +246,11 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
     }
 
     private void bindFavoriteState(VehicleViewHolder holder, boolean isFavorite) {
-        holder.cbSelectFavorite.setVisibility(View.GONE);
-        holder.ivFavoriteBadge.setVisibility(View.VISIBLE);
-        holder.ivFavoriteBadge.setSelected(isFavorite);
-        holder.ivFavoriteBadge.setImageResource(isFavorite
-            ? R.drawable.ic_heart_filled
-            : R.drawable.ic_heart_outline);
-        holder.ivFavoriteBadge.setContentDescription(holder.itemView.getContext().getString(
+        holder.favoriteActionView.setSelected(isFavorite);
+        holder.favoriteActionView.setImageResource(isFavorite
+                ? R.drawable.ic_favorite_heart_filled
+                : R.drawable.ic_favorite_heart_outline);
+        holder.favoriteActionView.setContentDescription(holder.itemView.getContext().getString(
                 isFavorite ? R.string.favorite_remove : R.string.favorite_add));
     }
 
