@@ -187,13 +187,56 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <ImageView
-                        android:id="@+id/ivDetail"
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="240dp"
-                        android:contentDescription="@string/vehicle_image"
-                        android:scaleType="centerCrop"
-                        tools:src="@tools:sample/backgrounds/scenic" />
+                        android:layout_height="240dp">
+
+                        <androidx.viewpager2.widget.ViewPager2
+                            android:id="@+id/vpDetailMedia"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            tools:background="@android:color/darker_gray" />
+
+                        <ImageButton
+                            android:id="@+id/btnMediaPrev"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_gravity="center_vertical|start"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/bg_circle_button"
+                            android:backgroundTint="#80000000"
+                            android:contentDescription="@string/detail_media_previous"
+                            android:padding="10dp"
+                            android:src="@drawable/ic_detail_back"
+                            android:tint="@color/white" />
+
+                        <ImageButton
+                            android:id="@+id/btnMediaNext"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_gravity="center_vertical|end"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/bg_circle_button"
+                            android:backgroundTint="#80000000"
+                            android:contentDescription="@string/detail_media_next"
+                            android:padding="10dp"
+                            android:rotation="180"
+                            android:src="@drawable/ic_detail_back"
+                            android:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tvMediaIndicator"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="bottom|center_horizontal"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/bg_filter_chip"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="6dp"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            tools:text="1/5" />
+                    </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -456,6 +499,7 @@
                             style="?android:attr/ratingBarStyleSmall"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:isIndicator="false"
                             android:numStars="5"
                             android:rating="5"
                             android:stepSize="1" />
