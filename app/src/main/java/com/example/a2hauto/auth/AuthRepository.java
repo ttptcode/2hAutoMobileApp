@@ -124,6 +124,14 @@ public class AuthRepository {
             return data.getAsString();
         }
 
+        // Nếu data là JSON object, tìm field "token"
+        if (data.isJsonObject()) {
+            JsonObject jsonObject = data.getAsJsonObject();
+            if (jsonObject.has("token") && !jsonObject.get("token").isJsonNull()) {
+                return jsonObject.get("token").getAsString();
+            }
+        }
+
         return data.toString();
     }
 
