@@ -145,16 +145,77 @@ public class CreateMotoPostActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
+        
+        if (data == null) {
+            android.util.Log.d("VideoUpload", "onActivityResult: data is null");
+            return;
+        }
+        
+        if (resultCode == RESULT_OK) {
             if (requestCode == PICK_IMAGE_REQUEST) {
                 if (data.getClipData() != null) {
                     for (int i = 0; i < data.getClipData().getItemCount(); i++) addImagePreview(data.getClipData().getItemAt(i).getUri());
                 } else if (data.getData() != null) addImagePreview(data.getData());
             } else if (requestCode == PICK_VIDEO_REQUEST) {
-                selectedVideoUri = data.getData();
-                tvVideoStatus.setText("Đã chọn video");
+                Uri videoUri = data.getData();
+                if (videoUri != null) {
+                    if (isValidVideoFormat(videoUri)) {
+                        selectedVideoUri = videoUri;
+                        String videoName = getFileNameFromUri(videoUri);
+                        tvVideoStatus.setText("✓ " + videoName);
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.success_green, getTheme()));
+                    } else {
+                        Toast.makeText(this, "Định dạng video không hỗ trợ. Vui lòng chọn: MP4, AVI, MOV, WMV", Toast.LENGTH_LONG).show();
+                        selectedVideoUri = null;
+                        tvVideoStatus.setText("Chưa chọn video");
+                        tvVideoStatus.setTextColor(getResources().getColor(R.color.text_muted, getTheme()));
+                    }
+                }
             }
         }
+    }
+
+    private boolean isValidVideoFormat(Uri videoUri) {
+        String mimeType = getContentResolver().getType(videoUri);
+        if (mimeType == null) {
+            String fileName = getFileNameFromUri(videoUri);
+            return fileName != null && isValidVideoExtension(fileName);
+        }
+        return mimeType.startsWith("video/");
+    }
+
+    private boolean isValidVideoExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        return lowerName.endsWith(".mp4") || 
+               lowerName.endsWith(".avi") || 
+               lowerName.endsWith(".mov") || 
+               lowerName.endsWith(".wmv") ||
+               lowerName.endsWith(".mkv") ||
+               lowerName.endsWith(".flv") ||
+               lowerName.endsWith(".webm");
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String fileName = null;
+        if (uri.getScheme().equals("content")) {
+            android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(android.provider.MediaStore.MediaColumns.DISPLAY_NAME);
+                    fileName = cursor.getString(nameIndex);
+                }
+            } finally {
+                if (cursor != null) cursor.close();
+            }
+        }
+        if (fileName == null) {
+            fileName = uri.getPath();
+            int cut = fileName.lastIndexOf('/');
+            if (cut != -1) {
+                fileName = fileName.substring(cut + 1);
+            }
+        }
+        return fileName;
     }
 
     private void addImagePreview(Uri uri) {
@@ -315,17 +376,50 @@ public class CreateMotoPostActivity extends AppCompatActivity {
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
-            while ((read = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, read);
-            }
+            while ((read = inputStream.read(buffer)) != -1) outputStream.write(buffer, 0, read);
             outputStream.close();
             inputStream.close();
             
-            RequestBody requestFile = RequestBody.create(MediaType.parse(getContentResolver().getType(fileUri)), file);
+            String mimeType = getContentResolver().getType(fileUri);
+            
+            android.util.Log.d("VideoUpload", "Original MIME from ContentResolver: " + mimeType);
+            android.util.Log.d("VideoUpload", "File URI: " + fileUri);
+            
+            if (mimeType == null || !mimeType.startsWith("video")) {
+                String extensionMime = getMimeTypeFromExtension(file.getName());
+                android.util.Log.d("VideoUpload", "Fallback MIME from extension: " + extensionMime);
+                if (extensionMime != null) {
+                    mimeType = extensionMime;
+                }
+            }
+            
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+            
+            android.util.Log.d("VideoUpload", "Final MIME type: " + mimeType);
+            android.util.Log.d("VideoUpload", "File name: " + file.getName() + ", File size: " + file.length());
+            
+            MediaType mediaType = MediaType.parse(mimeType);
+            RequestBody requestFile = RequestBody.create(mediaType, file);
             return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
         } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error preparing file: " + e.getMessage(), e);
             e.printStackTrace();
             return null;
         }
+    }
+
+    private String getMimeTypeFromExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".mp4")) return "video/mp4";
+        if (lowerName.endsWith(".avi")) return "video/x-msvideo";
+        if (lowerName.endsWith(".mov")) return "video/quicktime";
+        if (lowerName.endsWith(".wmv")) return "video/x-ms-wmv";
+        if (lowerName.endsWith(".mkv")) return "video/x-matroska";
+        if (lowerName.endsWith(".flv")) return "video/x-flv";
+        if (lowerName.endsWith(".webm")) return "video/webm";
+        if (lowerName.endsWith(".m4v")) return "video/mp4";
+        return "video/mp4";
     }
 }
