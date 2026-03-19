@@ -1,15 +1,21 @@
 package com.example.a2hauto;
 
 import android.content.Intent;
+import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -51,9 +57,15 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private TextView tvMiniListingCount;
     private TextView tvSectionSubtitle;
     private TextView tvEmptyState;
+    private View btnHeaderUpgrade;
+    private View btnHeaderLogin;
+    private View btnMiniHeaderLogin;
+    private TextView tvHeaderAvatar;
+    private TextView tvMiniHeaderAvatar;
+    private ImageView ivNavAccountIcon;
+    private TextView tvNavAccountLabel;
     private View miniHeaderCard;
     private AppBarLayout appBarLayout;
-    private boolean isMiniHeaderVisible;
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
 
@@ -74,6 +86,13 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvMiniListingCount = findViewById(R.id.tvMiniListingCount);
         tvSectionSubtitle = findViewById(R.id.tvSectionSubtitle);
         tvEmptyState = findViewById(R.id.tvEmptyState);
+        btnHeaderUpgrade = findViewById(R.id.btnHeaderUpgrade);
+        btnHeaderLogin = findViewById(R.id.btnHeaderLogin);
+        btnMiniHeaderLogin = findViewById(R.id.btnMiniHeaderLogin);
+        tvHeaderAvatar = findViewById(R.id.tvHeaderAvatar);
+        tvMiniHeaderAvatar = findViewById(R.id.tvMiniHeaderAvatar);
+        ivNavAccountIcon = findViewById(R.id.ivNavAccountIcon);
+        tvNavAccountLabel = findViewById(R.id.tvNavAccountLabel);
         miniHeaderCard = findViewById(R.id.miniHeaderCard);
         appBarLayout = findViewById(R.id.appBarLayout);
         authSessionManager = new AuthSessionManager(this);
@@ -85,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
         setupActions();
         setupMiniHeaderBehavior();
+        refreshAuthHeaderUi();
         initRetrofit();
         fetchListings();
     }
@@ -96,13 +116,19 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     }
 
     private void setupActions() {
-        findViewById(R.id.btnMenu).setOnClickListener(v -> showComingSoon(getString(R.string.menu)));
+        findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> openFavorites());
-        findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showComingSoon(getString(R.string.menu)));
+        findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> openFavorites());
         findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
+        btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
+        btnMiniHeaderLogin.setOnClickListener(v -> handleAccountAction());
+        tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        tvMiniHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         findViewById(R.id.navHome).setOnClickListener(v -> rvVehicles.smoothScrollToPosition(0));
         findViewById(R.id.navFavorites).setOnClickListener(v -> openFavorites());
+        findViewById(R.id.navPost).setOnClickListener(v -> handlePostAction());
         findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
     }
 
@@ -113,6 +139,12 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         }
 
         startActivity(new Intent(this, FavoritesActivity.class));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshAuthHeaderUi();
     }
 
     private void setupMiniHeaderBehavior() {
@@ -131,8 +163,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private void updateMiniHeaderProgress(float progress) {
         miniHeaderCard.animate().cancel();
 
-        isMiniHeaderVisible = progress > 0.01f;
-        miniHeaderCard.setVisibility(isMiniHeaderVisible ? View.VISIBLE : View.INVISIBLE);
+        miniHeaderCard.setVisibility(progress > 0.01f ? View.VISIBLE : View.INVISIBLE);
         miniHeaderCard.setAlpha(progress);
         miniHeaderCard.setTranslationY((1f - progress) * -20f);
     }
@@ -167,11 +198,116 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                         authSessionManager.getPhoneNumber()
                 ))
                 .setNegativeButton(android.R.string.cancel, null)
+                .setNeutralButton(R.string.action_upgrade, (dialog, which) -> showUpgradeDialog())
                 .setPositiveButton(R.string.action_logout, (dialog, which) -> {
                     authSessionManager.logout();
+                    refreshAuthHeaderUi();
                     Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
                 })
                 .show();
+    }
+
+    private void showUpgradeDialog() {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_upgrade_freemium, null, false);
+        new MaterialAlertDialogBuilder(this)
+                .setView(view)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.action_upgrade_now,
+                        (dialog, which) -> showComingSoon(getString(R.string.action_upgrade)))
+                .show();
+    }
+
+    private void handlePostAction() {
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+
+        startActivity(new Intent(this, ChooseCategoryActivity.class));
+    }
+
+    private void showCategoryMenuDialog() {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.dialog_category_menu, null, false);
+        LinearLayout optionContainer = dialogView.findViewById(R.id.menuOptionContainer);
+
+        List<CategoryMenuItem> menuItems = new ArrayList<>();
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_car), R.drawable.ic_menu_category_car));
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_motorbike), R.drawable.ic_menu_category_motorbike));
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_truck), R.drawable.ic_menu_category_truck));
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_electric), R.drawable.ic_menu_category_electric));
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_bicycle), R.drawable.ic_menu_category_bicycle));
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_other_vehicle), android.R.drawable.ic_menu_mapmode));
+        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_spare_parts), android.R.drawable.ic_menu_manage));
+
+        final androidx.appcompat.app.AlertDialog[] menuDialogRef = new androidx.appcompat.app.AlertDialog[1];
+        for (CategoryMenuItem item : menuItems) {
+            View optionView = inflater.inflate(R.layout.item_menu_option, optionContainer, false);
+            ImageView ivIcon = optionView.findViewById(R.id.ivMenuOptionIcon);
+            TextView tvTitle = optionView.findViewById(R.id.tvMenuOptionTitle);
+
+            ivIcon.setImageResource(item.iconResId);
+            tvTitle.setText(item.title);
+            optionView.setOnClickListener(v -> {
+                showComingSoon(item.title);
+                if (menuDialogRef[0] != null) {
+                    menuDialogRef[0].dismiss();
+                }
+            });
+
+            optionContainer.addView(optionView);
+        }
+
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .create();
+        menuDialogRef[0] = dialog;
+        dialog.show();
+    }
+
+    private static class CategoryMenuItem {
+        private final String title;
+        private final int iconResId;
+
+        private CategoryMenuItem(String title, int iconResId) {
+            this.title = title;
+            this.iconResId = iconResId;
+        }
+    }
+
+    private void refreshAuthHeaderUi() {
+        boolean isLoggedIn = authSessionManager.isLoggedIn();
+        String initials = getAvatarInitials(authSessionManager.getDisplayName(), authSessionManager.getPhoneNumber());
+
+        btnHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        btnMiniHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        tvHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
+        tvMiniHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
+
+        tvHeaderAvatar.setText(initials);
+        tvMiniHeaderAvatar.setText(initials);
+        ivNavAccountIcon.setImageResource(isLoggedIn ? android.R.drawable.presence_online : android.R.drawable.ic_menu_myplaces);
+        ivNavAccountIcon.setColorFilter(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_muted));
+        tvNavAccountLabel.setTextColor(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_secondary));
+    }
+
+    private String getAvatarInitials(String displayName, String phoneNumber) {
+        if (!TextUtils.isEmpty(displayName)) {
+            String[] parts = displayName.trim().split("\\s+");
+            if (parts.length >= 2) {
+                return ("" + Character.toUpperCase(parts[0].charAt(0))
+                        + Character.toUpperCase(parts[parts.length - 1].charAt(0)));
+            }
+            if (parts.length == 1 && !parts[0].isEmpty()) {
+                return ("" + Character.toUpperCase(parts[0].charAt(0)));
+            }
+        }
+
+        String normalizedPhone = phoneNumber == null ? "" : phoneNumber.replaceAll("\\D", "");
+        if (normalizedPhone.length() >= 2) {
+            return normalizedPhone.substring(normalizedPhone.length() - 2);
+        }
+        return "2H";
     }
 
     private void showComingSoon(String featureName) {
@@ -279,7 +415,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
     @Override
     public void onLoginSuccess(String displayName) {
-        // Auth dialog already shows success feedback.
+        refreshAuthHeaderUi();
     }
 
     @Override
@@ -289,7 +425,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
     @Override
     public void onRegisterSuccess(String displayName) {
-        // Auth dialog already shows success feedback.
+        refreshAuthHeaderUi();
     }
 
     @Override

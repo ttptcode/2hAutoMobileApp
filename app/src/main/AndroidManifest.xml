@@ -28,6 +28,38 @@
             android:exported="false"
             android:label="Chi tiết bài đăng" />
         <activity
+            android:name=".ChooseCategoryActivity"
+            android:exported="false"
+            android:label="Chọn danh mục" />
+        <activity
+            android:name=".CreatePostActivity"
+            android:exported="false"
+            android:label="Đăng tin" />
+        <activity
+            android:name=".CreateBikePostActivity"
+            android:exported="false"
+            android:label="Đăng tin xe đạp" />
+        <activity
+            android:name=".CreateMotoPostActivity"
+            android:exported="false"
+            android:label="Đăng tin xe máy" />
+        <activity
+            android:name=".CreateTruckPostActivity"
+            android:exported="false"
+            android:label="Đăng tin xe tải" />
+        <activity
+            android:name=".CreateElectricBikePostActivity"
+            android:exported="false"
+            android:label="Đăng tin xe điện" />
+        <activity
+            android:name=".CreateAccessoryPostActivity"
+            android:exported="false"
+            android:label="Đăng tin phụ kiện" />
+        <activity
+            android:name=".CreateBatteryPostActivity"
+            android:exported="false"
+            android:label="Đăng tin bình điện" />
+        <activity
             android:name=".FavoritesActivity"
             android:exported="false"
             android:label="Yêu thích" />
