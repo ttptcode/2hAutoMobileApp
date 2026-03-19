@@ -28,11 +28,6 @@
             android:exported="false"
             android:label="Chi tiết bài đăng" />
         <activity
-            android:name=".ChatActivity"
-            android:exported="false"
-            android:label="Trò chuyện"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
             android:name=".ChooseCategoryActivity"
             android:exported="false"
             android:label="Chọn danh mục" />
@@ -72,13 +67,10 @@
             android:name=".FavoritesActivity"
             android:exported="false"
             android:label="Yêu thích" />
-<<<<<<< feature/chat_V3
-=======
         <activity
             android:name=".ProfileActivity"
             android:exported="false"
             android:label="Tài khoản" />
->>>>>>> main
     </application>
 
 </manifest>
