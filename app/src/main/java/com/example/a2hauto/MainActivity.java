@@ -219,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             return;
         }
 
-        startActivity(new Intent(this, ChooseCategoryActivity.class));
+        startActivity(new Intent(this, NewsListingsActivity.class));
     }
 
     private void showCategoryMenuDialog() {
