@@ -33,7 +33,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
+import com.example.a2hauto.model.FavoriteItem;
+import com.example.a2hauto.model.ToggleFavoriteRequest;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -41,7 +42,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -58,6 +58,7 @@ public class DetailActivity extends AppCompatActivity implements
 
     private View btnHeaderUpgrade;
     private View btnHeaderLogin;
+    private ImageView btnHeaderFavorite;
     private TextView tvHeaderAvatar;
 
     private TextView tvDetailSpecsLeft;
@@ -79,6 +80,8 @@ public class DetailActivity extends AppCompatActivity implements
     private Listing currentListing;
     private String token;
     private String currentUserId;
+    private boolean isFavorite = false;
+    private boolean isFavoriteRequestInFlight = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +105,9 @@ public class DetailActivity extends AppCompatActivity implements
         refreshAuthHeaderUi();
         
         setupSpecsViews();
+        apiService = ApiClient.getApiService();
+        updateHeaderFavoriteUi();
+        fetchInitialFavoriteState();
         setupRelatedSection();
         setupReviewViews();
 
@@ -166,6 +172,7 @@ public class DetailActivity extends AppCompatActivity implements
     private void bindHeaderViews() {
         btnHeaderUpgrade = findViewById(R.id.btnHeaderUpgrade);
         btnHeaderLogin = findViewById(R.id.btnHeaderLogin);
+        btnHeaderFavorite = findViewById(R.id.btnHeaderFavorite);
         tvHeaderAvatar = findViewById(R.id.tvHeaderAvatar);
     }
 
@@ -182,6 +189,100 @@ public class DetailActivity extends AppCompatActivity implements
         if (btnHeaderUpgrade != null) btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
         if (btnHeaderLogin != null) btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         if (tvHeaderAvatar != null) tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        findViewById(R.id.btnDetailBackSmall).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
+        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> onFavoriteClicked());
+        btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
+        tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+    }
+
+    private void fetchInitialFavoriteState() {
+        String userId = authSessionManager.getUserId();
+        String listingId = currentListing.getListingId();
+        if (TextUtils.isEmpty(userId) || TextUtils.isEmpty(listingId)) {
+            isFavorite = false;
+            updateHeaderFavoriteUi();
+            return;
+        }
+
+        apiService.getFavoritesByUser(userId).enqueue(new Callback<ApiResponse<List<FavoriteItem>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<FavoriteItem>>> call, Response<ApiResponse<List<FavoriteItem>>> response) {
+                if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
+                    isFavorite = false;
+                    updateHeaderFavoriteUi();
+                    return;
+                }
+
+                List<FavoriteItem> favorites = response.body().getData();
+                boolean matched = false;
+                if (favorites != null) {
+                    for (FavoriteItem item : favorites) {
+                        if (item != null && listingId.equals(item.getListingId())) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                isFavorite = matched;
+                updateHeaderFavoriteUi();
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<FavoriteItem>>> call, Throwable t) {
+                isFavorite = false;
+                updateHeaderFavoriteUi();
+            }
+        });
+    }
+
+    private void onFavoriteClicked() {
+        if (!authSessionManager.isLoggedIn()) {
+            Toast.makeText(this, R.string.favorite_login_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userId = authSessionManager.getUserId();
+        String listingId = currentListing.getListingId();
+        if (TextUtils.isEmpty(userId) || TextUtils.isEmpty(listingId)) {
+            Toast.makeText(this, R.string.favorite_action_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (isFavoriteRequestInFlight) {
+            return;
+        }
+
+        isFavoriteRequestInFlight = true;
+        apiService.toggleFavorite(new ToggleFavoriteRequest(userId, listingId))
+                .enqueue(new Callback<ApiResponse<JsonElement>>() {
+                    @Override
+                    public void onResponse(Call<ApiResponse<JsonElement>> call, Response<ApiResponse<JsonElement>> response) {
+                        isFavoriteRequestInFlight = false;
+                        if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
+                            Toast.makeText(DetailActivity.this, R.string.favorite_action_failed, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        isFavorite = !isFavorite;
+                        updateHeaderFavoriteUi();
+                    }
+
+                    @Override
+                    public void onFailure(Call<ApiResponse<JsonElement>> call, Throwable t) {
+                        isFavoriteRequestInFlight = false;
+                        Toast.makeText(DetailActivity.this, R.string.favorite_action_failed, Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void updateHeaderFavoriteUi() {
+        if (btnHeaderFavorite == null) {
+            return;
+        }
+        btnHeaderFavorite.setImageResource(isFavorite ? R.drawable.ic_heart_filled : R.drawable.ic_heart_outline);
     }
 
     private void setupRelatedSection() {
