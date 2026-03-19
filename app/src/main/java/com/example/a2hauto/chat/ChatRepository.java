@@ -191,13 +191,11 @@ public class ChatRepository {
             }
         });
     }
-
     private String getAuthorizationHeader() {
         String token = authSessionManager.getAuthToken();
         if (TextUtils.isEmpty(token)) {
             return "";
         }
-
         String normalized = token.trim();
         if (normalized.toLowerCase(Locale.ROOT).startsWith("bearer ")) {
             normalized = normalized.substring(7).trim();
@@ -235,7 +233,6 @@ public class ChatRepository {
                 }
             }
         } catch (IOException ignored) {
-            // Keep fallback for parse failures.
         }
 
         return fallback;
