@@ -1,5 +1,6 @@
 package com.example.a2hauto;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -22,12 +23,16 @@ import com.example.a2hauto.auth.AuthSessionManager;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
 import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.FavoriteItem;
+import com.example.a2hauto.model.FavoriteResponse;
 import com.example.a2hauto.model.Listing;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import retrofit2.Call;
@@ -84,15 +89,30 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         fetchListings();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshFavoriteState();
+    }
+
     private void setupActions() {
         findViewById(R.id.btnMenu).setOnClickListener(v -> showComingSoon(getString(R.string.menu)));
-        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> openFavorites());
         findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showComingSoon(getString(R.string.menu)));
-        findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> openFavorites());
         findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
         findViewById(R.id.navHome).setOnClickListener(v -> rvVehicles.smoothScrollToPosition(0));
-        findViewById(R.id.navFavorites).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        findViewById(R.id.navFavorites).setOnClickListener(v -> openFavorites());
         findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
+    }
+
+    private void openFavorites() {
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+
+        startActivity(new Intent(this, FavoritesActivity.class));
     }
 
     private void setupMiniHeaderBehavior() {
@@ -199,6 +219,48 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                 updateListingUi(new ArrayList<>());
                 Log.e(TAG, "Failure: " + t.getMessage());
                 Toast.makeText(MainActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void refreshFavoriteState() {
+        if (adapter == null) {
+            return;
+        }
+
+        if (!authSessionManager.isLoggedIn()) {
+            adapter.updateFavoriteIds(new HashSet<>());
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        String userId = authSessionManager.getUserId();
+        if (userId == null || userId.trim().isEmpty()) {
+            adapter.updateFavoriteIds(new HashSet<>());
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        apiService.getFavoritesByUser(userId).enqueue(new Callback<FavoriteResponse>() {
+            @Override
+            public void onResponse(Call<FavoriteResponse> call, Response<FavoriteResponse> response) {
+                Set<String> favoriteIds = new HashSet<>();
+
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess() && response.body().getData() != null) {
+                    for (FavoriteItem favoriteItem : response.body().getData()) {
+                        if (favoriteItem != null && favoriteItem.getListingId() != null && !favoriteItem.getListingId().trim().isEmpty()) {
+                            favoriteIds.add(favoriteItem.getListingId());
+                        }
+                    }
+                }
+
+                adapter.updateFavoriteIds(favoriteIds);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onFailure(Call<FavoriteResponse> call, Throwable t) {
+                Log.w(TAG, "Failed to refresh favorites: " + t.getMessage());
             }
         });
     }

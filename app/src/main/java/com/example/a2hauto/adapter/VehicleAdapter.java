@@ -7,21 +7,43 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.example.a2hauto.DetailActivity;
 import com.example.a2hauto.R;
+import com.example.a2hauto.api.ApiClient;
+import com.example.a2hauto.api.ApiService;
+import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.Item;
 import com.example.a2hauto.model.Listing;
+import com.example.a2hauto.model.ToggleFavoriteRequest;
+import com.google.gson.JsonElement;
+
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleViewHolder> {
     private List<Listing> listings;
+    private final Map<String, Boolean> favoriteState = new HashMap<>();
+    private final Set<String> pendingToggleIds = new HashSet<>();
+    private ApiService apiService;
+    private AuthSessionManager authSessionManager;
 
     public VehicleAdapter(List<Listing> listings) {
         this.listings = listings;
@@ -95,6 +117,8 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(holder.ivVehicle);
 
+        bindFavoriteBadge(holder, listing);
+
         // Click event to show detail
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), DetailActivity.class);
@@ -103,9 +127,119 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
         });
     }
 
+    private void bindFavoriteBadge(@NonNull VehicleViewHolder holder, @NonNull Listing listing) {
+        String listingId = listing.getListingId();
+        boolean isFavorite = !TextUtils.isEmpty(listingId) && favoriteState.getOrDefault(listingId, false);
+        updateFavoriteIcon(holder.ivFavoriteBadge, isFavorite);
+
+        holder.ivFavoriteBadge.setClickable(true);
+        holder.ivFavoriteBadge.setFocusable(true);
+        holder.ivFavoriteBadge.setOnClickListener(v -> {
+            if (TextUtils.isEmpty(listingId)) {
+                Toast.makeText(v.getContext(), R.string.favorite_toggle_failed, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Child click consumes the event to avoid triggering the root item click.
+            v.getParent().requestDisallowInterceptTouchEvent(true);
+
+            if (pendingToggleIds.contains(listingId)) {
+                return;
+            }
+
+            ensureDependencies(v);
+            String userId = authSessionManager.getUserId();
+            if (TextUtils.isEmpty(userId)) {
+                Toast.makeText(v.getContext(), R.string.favorite_userid_missing, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            boolean previousState = favoriteState.getOrDefault(listingId, false);
+            boolean optimisticState = !previousState;
+
+            favoriteState.put(listingId, optimisticState);
+            updateFavoriteIcon(holder.ivFavoriteBadge, optimisticState);
+
+            pendingToggleIds.add(listingId);
+            holder.ivFavoriteBadge.setEnabled(false);
+
+            apiService.toggleFavorite(new ToggleFavoriteRequest(userId, listingId)).enqueue(new Callback<ApiResponse<JsonElement>>() {
+                @Override
+                public void onResponse(@NonNull Call<ApiResponse<JsonElement>> call, @NonNull Response<ApiResponse<JsonElement>> response) {
+                    pendingToggleIds.remove(listingId);
+                    holder.ivFavoriteBadge.setEnabled(true);
+
+                    if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                        Toast.makeText(holder.itemView.getContext(),
+                                optimisticState ? "Đã thêm vào yêu thích" : "Đã xóa khỏi yêu thích",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // Rollback optimistic state when API fails.
+                    favoriteState.put(listingId, previousState);
+                    notifyListingChanged(listingId);
+                    Toast.makeText(holder.itemView.getContext(), R.string.favorite_toggle_failed, Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<ApiResponse<JsonElement>> call, @NonNull Throwable t) {
+                    pendingToggleIds.remove(listingId);
+                    holder.ivFavoriteBadge.setEnabled(true);
+
+                    favoriteState.put(listingId, previousState);
+                    notifyListingChanged(listingId);
+                    Toast.makeText(holder.itemView.getContext(), R.string.favorite_toggle_failed, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    private void ensureDependencies(@NonNull View anchorView) {
+        if (apiService == null) {
+            apiService = ApiClient.getApiService();
+        }
+        if (authSessionManager == null) {
+            authSessionManager = new AuthSessionManager(anchorView.getContext());
+        }
+    }
+
+    private void updateFavoriteIcon(@NonNull ImageView favoriteView, boolean isFavorite) {
+        favoriteView.setImageResource(isFavorite ? R.drawable.ic_heart_filled : R.drawable.ic_heart_outline);
+    }
+
+    private void notifyListingChanged(@NonNull String listingId) {
+        if (listings == null || listings.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < listings.size(); i++) {
+            Listing listing = listings.get(i);
+            if (listing != null && TextUtils.equals(listingId, listing.getListingId())) {
+                notifyItemChanged(i);
+                return;
+            }
+        }
+    }
+
     @Override
     public int getItemCount() {
         return listings == null ? 0 : listings.size();
+    }
+
+    public void updateFavoriteIds(Set<String> newFavoriteIds) {
+        favoriteState.clear();
+        pendingToggleIds.clear();
+
+        if (newFavoriteIds == null || newFavoriteIds.isEmpty()) {
+            return;
+        }
+
+        for (String listingId : newFavoriteIds) {
+            if (!TextUtils.isEmpty(listingId)) {
+                favoriteState.put(listingId, true);
+            }
+        }
     }
 
     public void setListings(List<Listing> listings) {
@@ -151,11 +285,13 @@ public class VehicleAdapter extends RecyclerView.Adapter<VehicleAdapter.VehicleV
 
     public static class VehicleViewHolder extends RecyclerView.ViewHolder {
         ImageView ivVehicle;
+        ImageView ivFavoriteBadge;
         TextView tvName, tvPrice, tvConditionTag, tvSpecs, tvAddress, tvSeller, tvListingType, tvSummary;
 
         public VehicleViewHolder(@NonNull View itemView) {
             super(itemView);
             ivVehicle = itemView.findViewById(R.id.ivVehicle);
+            ivFavoriteBadge = itemView.findViewById(R.id.ivFavoriteBadge);
             tvName = itemView.findViewById(R.id.tvName);
             tvPrice = itemView.findViewById(R.id.tvPrice);
             tvConditionTag = itemView.findViewById(R.id.tvConditionTag);

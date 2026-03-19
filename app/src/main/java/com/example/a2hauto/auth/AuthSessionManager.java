@@ -13,6 +13,7 @@ public class AuthSessionManager {
     private static final String KEY_FULL_NAME = "full_name";
     private static final String KEY_PHONE = "phone";
     private static final String KEY_AUTH_TOKEN = "auth_token";
+    private static final String KEY_USER_ID = "user_id";
     private static final String KEY_PENDING_FULL_NAME = "pending_full_name";
     private static final String KEY_PENDING_PHONE = "pending_phone";
 
@@ -32,10 +33,12 @@ public class AuthSessionManager {
     public void saveSession(String fullName, String phone, String authToken) {
         String sanitizedName = fullName == null ? "" : fullName.trim();
         String normalizedPhone = AuthValidator.normalizePhone(phone);
+        String userId = JwtUtils.extractUserId(authToken);
         sharedPreferences.edit()
                 .putString(KEY_FULL_NAME, sanitizedName)
                 .putString(KEY_PHONE, normalizedPhone)
                 .putString(KEY_AUTH_TOKEN, authToken == null ? "" : authToken)
+            .putString(KEY_USER_ID, userId)
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .putBoolean(KEY_IS_LOGGED_IN, true)
@@ -72,6 +75,21 @@ public class AuthSessionManager {
 
     public String getAuthToken() {
         return sharedPreferences.getString(KEY_AUTH_TOKEN, "");
+    }
+
+    public String getUserId() {
+        String savedUserId = sharedPreferences.getString(KEY_USER_ID, "");
+        if (!TextUtils.isEmpty(savedUserId)) {
+            return savedUserId;
+        }
+
+        String resolvedUserId = JwtUtils.extractUserId(getAuthToken());
+        if (!TextUtils.isEmpty(resolvedUserId)) {
+            sharedPreferences.edit().putString(KEY_USER_ID, resolvedUserId).apply();
+            return resolvedUserId;
+        }
+
+        return "";
     }
 
     public String getPendingFullName() {

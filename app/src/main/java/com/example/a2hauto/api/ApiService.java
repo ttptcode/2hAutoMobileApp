@@ -4,8 +4,10 @@ import com.example.a2hauto.model.auth.LoginRequest;
 import com.example.a2hauto.model.auth.RegisterRequest;
 import com.google.gson.JsonElement;
 import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.FavoriteResponse;
 import com.example.a2hauto.model.Listing;
 import com.example.a2hauto.model.ItemType;
+import com.example.a2hauto.model.ToggleFavoriteRequest;
 import java.util.List;
 import java.util.Map;
 import okhttp3.MultipartBody;
@@ -43,4 +45,10 @@ public interface ApiService {
 
     @POST("api/Auth/register")
     Call<ApiResponse<JsonElement>> register(@Body RegisterRequest request);
+
+    @GET("api/Favorites/user/{userId}")
+    Call<FavoriteResponse> getFavoritesByUser(@Path("userId") String userId);
+
+    @POST("api/Favorites/toggle")
+    Call<ApiResponse<JsonElement>> toggleFavorite(@Body ToggleFavoriteRequest request);
 }

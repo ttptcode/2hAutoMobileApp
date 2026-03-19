@@ -70,4 +70,26 @@
     <string name="logout_success">Bạn đã đăng xuất khỏi tài khoản.</string>
     <string name="account_guest_name">Khách hàng 2H Auto</string>
     <string name="dialog_google_login">Đăng nhập bằng Google</string>
+    <string name="action_back">Quay lại</string>
+    <string name="favorites_title">Mục yêu thích</string>
+    <string name="favorites_count_format">%1$d xe</string>
+    <string name="favorites_empty_icon">Biểu tượng trạng thái trống</string>
+    <string name="favorites_empty_title">Chưa có sản phẩm</string>
+    <string name="favorites_empty_desc">Bạn chưa lưu sản phẩm nào. Khám phá thêm để lưu những mẫu xe phù hợp với bạn.</string>
+    <string name="favorites_explore_now">Khám phá ngay</string>
+    <string name="favorite_userid_missing">Không tìm thấy tài khoản người dùng. Vui lòng đăng nhập lại.</string>
+    <string name="favorite_load_failed">Không thể tải danh sách yêu thích.</string>
+    <string name="favorite_toggle_failed">Không thể cập nhật yêu thích. Vui lòng thử lại.</string>
+    <string name="favorite_removed_success">Đã bỏ khỏi mục yêu thích.</string>
+    <string name="connection_error">Lỗi kết nối: %1$s</string>
+    <string name="favorites_select_mode">Chọn</string>
+    <string name="favorites_delete_format">Xóa (%1$d)</string>
+    <string name="favorites_delete_default">Xóa (0)</string>
+    <string name="favorites_delete_action">Xóa</string>
+    <string name="favorites_delete_dialog_title">Xác nhận xóa</string>
+    <string name="favorites_delete_dialog_message">Bạn có chắc muốn xóa các mục đã chọn khỏi danh sách yêu thích?</string>
+    <string name="favorites_delete_dialog_message_count">Bạn có chắc muốn xóa %1$d mục đã chọn khỏi danh sách yêu thích?</string>
+    <string name="favorites_deleted_success_count">Đã xóa %1$d mục yêu thích.</string>
+    <string name="favorites_deleted_failed_count">Không thể xóa %1$d mục. Vui lòng thử lại.</string>
+    <string name="action_cancel">Hủy</string>
 </resources>

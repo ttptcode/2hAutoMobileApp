@@ -27,6 +27,10 @@
             android:name=".DetailActivity"
             android:exported="false"
             android:label="Chi tiết bài đăng" />
+        <activity
+            android:name=".FavoritesActivity"
+            android:exported="false"
+            android:label="Yêu thích" />
     </application>
 
 </manifest>
