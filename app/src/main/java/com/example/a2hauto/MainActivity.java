@@ -173,6 +173,8 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         chipHomeElectric.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ELECTRIC));
         chipHomeAccessories.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ACCESSORIES));
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
+        btnHeaderUpgrade.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         btnMiniHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());

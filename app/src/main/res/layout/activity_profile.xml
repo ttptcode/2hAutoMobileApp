@@ -410,60 +410,199 @@
                         android:id="@+id/layoutPackages"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center"
                         android:orientation="vertical"
                         android:paddingHorizontal="20dp"
                         android:paddingTop="28dp"
                         android:paddingBottom="12dp"
                         android:visibility="gone">
 
-                        <FrameLayout
-                            android:layout_width="72dp"
-                            android:layout_height="72dp"
-                            android:background="@drawable/bg_circle_button"
-                            android:backgroundTint="@color/primary_teal_soft">
-
-                            <ImageView
-                                android:layout_width="34dp"
-                                android:layout_height="34dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_badge_outline"
-                                android:tint="@color/primary_teal_dark" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="Bạn chưa có gói đăng tin nào"
-                            android:textColor="@color/text_primary"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:gravity="center"
-                            android:text="Hãy nâng cấp gói để đăng được nhiều tin hơn và tiếp cận nhiều khách hàng hơn."
-                            android:textColor="@color/text_secondary"
-                            android:textSize="15sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnViewPackages"
+                        <LinearLayout
+                            android:id="@+id/layoutActivePackage"
                             android:layout_width="match_parent"
-                            android:layout_height="52dp"
-                            android:layout_marginTop="18dp"
-                            android:text="Xem các gói đăng tin"
-                            android:textAllCaps="false"
-                            android:textColor="@color/primary_teal_dark"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            app:backgroundTint="@android:color/transparent"
-                            app:cornerRadius="14dp"
-                            app:strokeColor="@color/primary_teal_dark"
-                            app:strokeWidth="1dp" />
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:cardBackgroundColor="@color/home_background"
+                                app:cardCornerRadius="16dp"
+                                app:cardElevation="0dp"
+                                app:strokeColor="@color/primary_teal_dark"
+                                app:strokeWidth="1dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:padding="16dp">
+
+                                    <TextView
+                                        android:id="@+id/tvPackageName"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Gói đăng tin"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="22sp"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/tvPackageDesc"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="6dp"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="15sp"
+                                        tools:text="Đăng được 1 tin" />
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="14dp"
+                                        android:orientation="horizontal">
+
+                                        <LinearLayout
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:orientation="vertical">
+
+                                            <TextView
+                                                android:layout_width="wrap_content"
+                                                android:layout_height="wrap_content"
+                                                android:text="Tin còn lại"
+                                                android:textColor="@color/text_secondary"
+                                                android:textSize="14sp" />
+
+                                            <TextView
+                                                android:id="@+id/tvRemainingListings"
+                                                android:layout_width="wrap_content"
+                                                android:layout_height="wrap_content"
+                                                android:layout_marginTop="4dp"
+                                                android:textColor="@color/primary_teal_dark"
+                                                android:textSize="24sp"
+                                                android:textStyle="bold"
+                                                tools:text="3/10" />
+                                        </LinearLayout>
+
+                                        <LinearLayout
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:orientation="vertical">
+
+                                            <TextView
+                                                android:layout_width="wrap_content"
+                                                android:layout_height="wrap_content"
+                                                android:text="Hết hạn"
+                                                android:textColor="@color/text_secondary"
+                                                android:textSize="14sp" />
+
+                                            <TextView
+                                                android:id="@+id/tvExpirationDate"
+                                                android:layout_width="wrap_content"
+                                                android:layout_height="wrap_content"
+                                                android:layout_marginTop="4dp"
+                                                android:textColor="@color/text_primary"
+                                                android:textSize="22sp"
+                                                android:textStyle="bold"
+                                                tools:text="29/05/2026" />
+                                        </LinearLayout>
+                                    </LinearLayout>
+
+                                    <TextView
+                                        android:id="@+id/tvActivationDate"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="12dp"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="14sp"
+                                        tools:text="Kích hoạt: 01/11/2025" />
+
+                                    <TextView
+                                        android:id="@+id/tvPackagePrice"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="6dp"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="18sp"
+                                        android:textStyle="bold"
+                                        tools:text="300.000 VNĐ" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnUpgradePackage"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:layout_marginTop="18dp"
+                                android:text="Nâng cấp gói đăng tin"
+                                android:textAllCaps="false"
+                                android:textColor="@color/primary_teal_dark"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:backgroundTint="@android:color/transparent"
+                                app:cornerRadius="14dp"
+                                app:strokeColor="@color/primary_teal_dark"
+                                app:strokeWidth="1dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/layoutEmptyPackage"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="72dp"
+                                android:layout_height="72dp"
+                                android:background="@drawable/bg_circle_button"
+                                android:backgroundTint="@color/primary_teal_soft">
+
+                                <ImageView
+                                    android:layout_width="34dp"
+                                    android:layout_height="34dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_badge_outline"
+                                    android:tint="@color/primary_teal_dark" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp"
+                                android:text="Bạn chưa có gói đăng tin nào"
+                                android:textColor="@color/text_primary"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:gravity="center"
+                                android:text="Hãy nâng cấp gói để đăng được nhiều tin hơn và tiếp cận nhiều khách hàng hơn."
+                                android:textColor="@color/text_secondary"
+                                android:textSize="15sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnViewPackages"
+                                android:layout_width="match_parent"
+                                android:layout_height="52dp"
+                                android:layout_marginTop="18dp"
+                                android:text="Xem các gói đăng tin"
+                                android:textAllCaps="false"
+                                android:textColor="@color/primary_teal_dark"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:backgroundTint="@android:color/transparent"
+                                app:cornerRadius="14dp"
+                                app:strokeColor="@color/primary_teal_dark"
+                                app:strokeWidth="1dp" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

@@ -622,11 +622,13 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void updateReviewInputUi() {
-        if (btnSubmitReview == null || etReviewComment == null) return;
+        if (btnSubmitReview == null || etReviewComment == null || ratingBarReview == null) return;
 
         boolean canReview = authSessionManager.isLoggedIn() && !TextUtils.isEmpty(token) && !TextUtils.isEmpty(currentUserId);
         btnSubmitReview.setEnabled(canReview);
         etReviewComment.setEnabled(canReview);
+        ratingBarReview.setEnabled(canReview);
+        ratingBarReview.setIsIndicator(!canReview);
         
         if (!canReview) {
             etReviewComment.setHint(R.string.review_login_to_comment);
