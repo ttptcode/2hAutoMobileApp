@@ -17,8 +17,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.a2hauto.api.ApiService;
+import com.example.a2hauto.auth.AuthInterceptor;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.Listing;
+import com.example.a2hauto.util.AuthDebugger;
+import com.example.a2hauto.util.ErrorHandler;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -111,8 +114,13 @@ public class CreateAccessoryPostActivity extends AppCompatActivity {
     }
 
     private void initRetrofit() {
+        // Tạo OkHttpClient với AuthInterceptor
+        okhttp3.OkHttpClient.Builder httpClient = new okhttp3.OkHttpClient.Builder();
+        httpClient.addInterceptor(new AuthInterceptor(this));
+
         apiService = new Retrofit.Builder()
                 .baseUrl("http://vehiclemarket.runasp.net/")
+                .client(httpClient.build())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(ApiService.class);
@@ -152,13 +160,16 @@ public class CreateAccessoryPostActivity extends AppCompatActivity {
     }
 
     private void submitPost(boolean isDraft) {
+        // Debug authentication status
+        AuthDebugger.debugAuthStatus(this);
+
         if (selectedImageUris.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn ít nhất 1 hình ảnh", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (!isDraft) {
-            if (etTitle.getText().toString().isEmpty() || etPrice.getText().toString().isEmpty()) {
+            if (etTitle.getText().toString().isEmpty() || spinnerCategory.getText().toString().isEmpty()) {
                 Toast.makeText(this, "Vui lòng điền các trường bắt buộc (*)", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -172,22 +183,51 @@ public class CreateAccessoryPostActivity extends AppCompatActivity {
         String itemTypeId = getIntent().getStringExtra("itemTypeId");
         fields.put("ItemTypeId", createPartFromString(itemTypeId != null ? itemTypeId : "cc92949a-8ca9-49f5-821d-02bc107acbfb"));
         fields.put("SerialNumber", createPartFromString("ACC_" + System.currentTimeMillis()));
-        fields.put("Title", createPartFromString(etTitle.getText().toString()));
-        fields.put("Condition", createPartFromString(spinnerCondition.getText().toString()));
-        fields.put("PartType", createPartFromString(spinnerCategory.getText().toString()));
-        fields.put("Origin", createPartFromString(spinnerOrigin.getText().toString()));
-        fields.put("Price", createPartFromString(etPrice.getText().toString()));
-        fields.put("BuyNowPrice", createPartFromString(etPrice.getText().toString()));
-        fields.put("Detail", createPartFromString(etDescription.getText().toString()));
-        fields.put("Address", createPartFromString(etAddress.getText().toString()));
+        
+        String titleValue = etTitle.getText().toString().trim();
+        fields.put("Title", createPartFromString(titleValue.isEmpty() ? "Chưa cập nhật" : titleValue));
+        
+        String conditionValue = spinnerCondition.getText().toString().trim();
+        fields.put("Condition", createPartFromString(conditionValue.isEmpty() ? "Đã qua sử dụng" : conditionValue));
+        
+        String partTypeValue = spinnerCategory.getText().toString().trim();
+        fields.put("PartType", createPartFromString(partTypeValue.isEmpty() ? "Phụ tùng khác" : partTypeValue));
+        
+        String originValue = spinnerOrigin.getText().toString().trim();
+        fields.put("Origin", createPartFromString(originValue.isEmpty() ? "Việt Nam" : originValue));
+        
+        String priceValue = etPrice.getText().toString().trim();
+        String finalPrice = priceValue.isEmpty() ? "0" : priceValue;
+        fields.put("Price", createPartFromString(finalPrice));
+        fields.put("BuyNowPrice", createPartFromString(finalPrice));
+        
+        String descriptionValue = etDescription.getText().toString().trim();
+        fields.put("Detail", createPartFromString(descriptionValue.isEmpty() ? "Chưa cập nhật" : descriptionValue));
+        
+        String addressValue = etAddress.getText().toString().trim();
+        fields.put("Address", createPartFromString(addressValue.isEmpty() ? "Chưa cập nhật" : addressValue));
+        
         fields.put("ListingType", createPartFromString("0"));
         
         String sellerType = rgSellerType.getCheckedRadioButtonId() == R.id.rbIndividual ? "Cá nhân" : "Bán chuyên";
         fields.put("YouAre", createPartFromString(sellerType));
 
         List<MultipartBody.Part> imageParts = new ArrayList<>();
-        for (Uri uri : selectedImageUris) imageParts.add(prepareFilePart("Images", uri));
-        MultipartBody.Part videoPart = !selectedVideoUris.isEmpty() ? prepareFilePart("Video", selectedVideoUris.get(0)) : null;
+        for (Uri uri : selectedImageUris) {
+            MultipartBody.Part part = prepareFilePart("Images", uri);
+            if (part != null) imageParts.add(part);
+        }
+
+        if (imageParts.isEmpty()) {
+            resetButtons();
+            Toast.makeText(this, "Lỗi xử lý hình ảnh", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        MultipartBody.Part videoPart = null;
+        if (!selectedVideoUris.isEmpty()) {
+            videoPart = prepareFilePart("Video", selectedVideoUris.get(0));
+        }
 
         apiService.createListing(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
             @Override
@@ -201,14 +241,14 @@ public class CreateAccessoryPostActivity extends AppCompatActivity {
                     }
                 } else {
                     resetButtons();
-                    Toast.makeText(CreateAccessoryPostActivity.this, "Lỗi tạo bài đăng", Toast.LENGTH_SHORT).show();
+                    ErrorHandler.handleErrorResponse(CreateAccessoryPostActivity.this, response);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
                 resetButtons();
-                Toast.makeText(CreateAccessoryPostActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                ErrorHandler.handleNetworkError(CreateAccessoryPostActivity.this, t);
             }
         });
     }
@@ -249,14 +289,21 @@ public class CreateAccessoryPostActivity extends AppCompatActivity {
     private MultipartBody.Part prepareFilePart(String partName, Uri fileUri) {
         try {
             InputStream inputStream = getContentResolver().openInputStream(fileUri);
+            if (inputStream == null) return null;
+            
             File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis());
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
             while ((read = inputStream.read(buffer)) != -1) outputStream.write(buffer, 0, read);
             outputStream.close();
+            inputStream.close();
+            
             RequestBody requestFile = RequestBody.create(MediaType.parse(getContentResolver().getType(fileUri)), file);
             return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

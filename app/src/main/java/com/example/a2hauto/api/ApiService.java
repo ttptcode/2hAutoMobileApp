@@ -51,7 +51,7 @@ public interface ApiService {
     Call<ApiResponse<List<ItemType>>> getItemTypes();
 
     @Multipart
-    @POST("api/Listings")
+    @POST("api/Listings/with-item")
     Call<ApiResponse<Listing>> createListing(
             @PartMap Map<String, RequestBody> fields,
             @Part List<MultipartBody.Part> Images,
