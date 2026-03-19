@@ -68,7 +68,7 @@
                 android:backgroundTint="@color/favorite_soft"
                 android:contentDescription="@string/header_favorite"
                 android:padding="12dp"
-                android:src="@android:drawable/btn_star_big_off"
+                android:src="@drawable/ic_heart_outline"
                 android:tint="@color/favorite_tint" />
 
             <com.google.android.material.button.MaterialButton

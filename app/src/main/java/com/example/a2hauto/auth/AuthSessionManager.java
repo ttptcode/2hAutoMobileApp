@@ -74,6 +74,10 @@ public class AuthSessionManager {
         return sharedPreferences.getString(KEY_AUTH_TOKEN, "");
     }
 
+    public String getUserId() {
+        return JwtUtils.extractUserId(getAuthToken());
+    }
+
     public String getPendingFullName() {
         return sharedPreferences.getString(KEY_PENDING_FULL_NAME, "");
     }

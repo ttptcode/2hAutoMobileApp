@@ -87,7 +87,7 @@
                         android:backgroundTint="@color/favorite_soft"
                         android:contentDescription="@string/header_favorite"
                         android:padding="12dp"
-                        android:src="@android:drawable/btn_star_big_off"
+                        android:src="@drawable/ic_heart_outline"
                         android:tint="@color/favorite_tint" />
 
                     <com.google.android.material.button.MaterialButton
@@ -108,7 +108,7 @@
                         android:textStyle="bold"
                         app:backgroundTint="@color/accent_yellow"
                         app:cornerRadius="14dp"
-                        app:icon="@android:drawable/btn_star_big_on"
+                        app:icon="@drawable/ic_heart_outline"
                         app:iconGravity="textStart"
                         app:iconPadding="4dp"
                         app:iconTint="@color/text_primary" />
@@ -439,7 +439,7 @@
                     android:backgroundTint="@color/favorite_soft"
                     android:contentDescription="@string/header_favorite"
                     android:padding="10dp"
-                    android:src="@android:drawable/btn_star_big_off"
+                    android:src="@drawable/ic_heart_outline"
                     android:tint="@color/favorite_tint" />
 
                 <FrameLayout
@@ -601,7 +601,7 @@
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@android:drawable/btn_star_big_off"
+                    android:src="@drawable/ic_heart_outline"
                     android:tint="@color/text_muted" />
 
                 <TextView
