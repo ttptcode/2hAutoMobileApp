@@ -37,198 +37,56 @@
                 android:layout_weight="1"
                 android:text="@string/chat_list_title"
                 android:textColor="@color/text_primary"
-                android:textSize="34sp"
+                android:textSize="30sp"
                 android:textStyle="bold"
                 tools:ignore="SpUsage" />
         </LinearLayout>
 
-        <LinearLayout
+        <EditText
+            android:id="@+id/etChatSearch"
             android:layout_width="match_parent"
             android:layout_height="42dp"
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_chat_input"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="12dp">
+            android:hint="@string/chat_search_hint"
+            android:inputType="text"
+            android:paddingHorizontal="12dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_muted"
+            android:textSize="13sp" />
 
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:contentDescription="@string/chat_search"
-                android:src="@android:drawable/ic_menu_search"
-                app:tint="@color/text_muted" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/chat_search_hint"
-                android:textColor="@color/text_muted"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_nav_active"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="7dp"
-                android:text="@string/chat_tab_all"
-                android:textColor="@color/primary_teal_dark"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="7dp"
-                android:text="@string/chat_tab_unread"
-                android:textColor="@color/text_primary"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="7dp"
-                android:text="@string/chat_tab_group"
-                android:textColor="@color/text_primary"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <LinearLayout
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_weight="1">
 
-            <LinearLayout
-                android:id="@+id/itemChatUser1"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvChatConversations"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="10dp" />
+
+            <TextView
+                android:id="@+id/tvChatListEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_chat_selected_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="11dp">
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:paddingHorizontal="24dp"
+                android:text="@string/chat_list_empty"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
-                <TextView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_circle_button"
-                    android:gravity="center"
-                    android:text="T"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/chipSuggestionPrice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Tuananh"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/chipSuggestionAvailable"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="(No messages yet)"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="13:26"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/itemChatUser2"
-                android:layout_width="match_parent"
+            <ProgressBar
+                android:id="@+id/progressChatList"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_chat_input"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="11dp">
-
-                <TextView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_circle_button"
-                    android:gravity="center"
-                    android:text="TL"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/chipSuggestionAddress"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Tran Le Tuan Anh (K17 HCM)"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/chipSuggestionFixPrice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="(No messages yet)"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="10:23"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -257,17 +115,6 @@
                 android:src="@drawable/ic_detail_back"
                 app:tint="@color/text_primary" />
 
-            <TextView
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_circle_button"
-                android:gravity="center"
-                android:text="T"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -279,11 +126,12 @@
                     android:id="@+id/tvChatHeaderName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tuananh"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    tools:ignore="SpUsage" />
+                    tools:text="Tuan Anh" />
 
                 <TextView
                     android:id="@+id/tvChatHeaderStatus"
@@ -292,9 +140,7 @@
                     android:layout_marginTop="2dp"
                     android:text="@string/chat_status_unknown"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:ellipsize="end"
-                    android:maxLines="1" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
         </LinearLayout>
@@ -302,32 +148,35 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="#FFEFF1F5">
+            android:layout_weight="1">
 
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvChatMessages"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingHorizontal="14dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvChatMessageEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:paddingHorizontal="24dp"
+                android:text="@string/chat_message_empty"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
-                <ImageView
-                    android:layout_width="180dp"
-                    android:layout_height="180dp"
-                    android:alpha="0.32"
-                    android:contentDescription="@string/app_name"
-                    android:src="@mipmap/ic_launcher" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="2H AUTO"
-                    android:textColor="@color/primary_teal_dark"
-                    android:textSize="44sp"
-                    android:textStyle="bold"
-                    tools:ignore="SpUsage" />
-            </LinearLayout>
+            <ProgressBar
+                android:id="@+id/progressChatMessages"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
         </FrameLayout>
 
         <LinearLayout
@@ -339,88 +188,19 @@
             android:paddingTop="8dp"
             android:paddingBottom="10dp">
 
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:overScrollMode="never"
-                android:scrollbars="none">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/chipSuggestionThanks"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_chat_suggestion_chip"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="7dp"
-                        android:text="@string/chat_suggestion_price"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chat_suggestion_chip"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="7dp"
-                        android:text="@string/chat_suggestion_available"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chat_suggestion_chip"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="7dp"
-                        android:text="@string/chat_suggestion_address"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chat_suggestion_chip"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="7dp"
-                        android:text="@string/chat_suggestion_fix_price"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chat_suggestion_chip"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="7dp"
-                        android:text="@string/chat_suggestion_thanks"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-            </HorizontalScrollView>
-
             <TextView
                 android:id="@+id/tvSelectedMedia"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
                 android:textColor="@color/primary_teal_dark"
                 android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Da chon 2 tep media" />
+                tools:text="Da chon 2 tep" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="62dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
@@ -431,25 +211,8 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_chat_input"
                     android:gravity="center_vertical"
-                    android:paddingHorizontal="14dp"
+                    android:paddingHorizontal="12dp"
                     android:paddingVertical="4dp">
-
-                    <EditText
-                        android:id="@+id/etChatMessage"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@android:color/transparent"
-                        android:hint="@string/chat_input_hint"
-                        android:imeOptions="actionSend"
-                        android:inputType="textCapSentences|textMultiLine"
-                        android:maxLines="3"
-                        android:minLines="1"
-                        android:minHeight="36dp"
-                        android:padding="0dp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_muted"
-                        android:textSize="15sp" />
 
                     <ImageButton
                         android:id="@+id/btnPickMedia"
@@ -460,6 +223,23 @@
                         android:padding="3dp"
                         android:src="@android:drawable/ic_menu_gallery"
                         app:tint="@color/text_secondary" />
+
+                    <EditText
+                        android:id="@+id/etChatMessage"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:hint="@string/chat_input_hint"
+                        android:imeOptions="actionSend"
+                        android:inputType="textCapSentences|textMultiLine"
+                        android:maxLines="3"
+                        android:minLines="1"
+                        android:padding="0dp"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_muted"
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <ImageButton
@@ -478,7 +258,5 @@
     </LinearLayout>
 
 </FrameLayout>
-
-
 
 

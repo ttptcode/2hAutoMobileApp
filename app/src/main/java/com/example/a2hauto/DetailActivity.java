@@ -1,5 +1,6 @@
 package com.example.a2hauto;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -19,6 +20,7 @@ import com.example.a2hauto.adapter.VehicleAdapter;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.chat.ChatRepository;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
 import com.example.a2hauto.model.ApiResponse;
@@ -50,6 +52,7 @@ public class DetailActivity extends AppCompatActivity implements
     private VehicleAdapter relatedAdapter;
     private Listing currentListing;
     private AuthSessionManager authSessionManager;
+    private ChatRepository chatRepository;
 
     private View btnHeaderUpgrade;
     private View btnHeaderLogin;
@@ -75,6 +78,7 @@ public class DetailActivity extends AppCompatActivity implements
         }
 
         authSessionManager = new AuthSessionManager(this);
+        chatRepository = new ChatRepository(ApiClient.getApiService(), authSessionManager);
         bindHeaderViews();
         setupHeaderActions();
         refreshAuthHeaderUi();
@@ -144,9 +148,40 @@ public class DetailActivity extends AppCompatActivity implements
         findViewById(R.id.btnDetailBackSmall).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> onFavoriteClicked());
+        findViewById(R.id.btnDetailChat).setOnClickListener(v -> openChatFromDetail());
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+    }
+
+    private void openChatFromDetail() {
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+
+        String listingId = currentListing == null ? "" : currentListing.getListingId();
+        String buyerId = authSessionManager.getUserId();
+        if (TextUtils.isEmpty(listingId) || TextUtils.isEmpty(buyerId)) {
+            Toast.makeText(this, R.string.chat_open_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        chatRepository.createConversation(listingId, buyerId, new ChatRepository.RepositoryCallback<com.example.a2hauto.model.Conversation>() {
+            @Override
+            public void onSuccess(com.example.a2hauto.model.Conversation data) {
+                Intent intent = new Intent(DetailActivity.this, ChatActivity.class);
+                if (data != null && !TextUtils.isEmpty(data.getConversationId())) {
+                    intent.putExtra(ChatActivity.EXTRA_OPEN_CONVERSATION_ID, data.getConversationId());
+                }
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(DetailActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void fetchInitialFavoriteState() {

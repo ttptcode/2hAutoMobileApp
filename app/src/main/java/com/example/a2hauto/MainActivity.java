@@ -25,11 +25,13 @@ import com.example.a2hauto.adapter.VehicleAdapter;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.chat.ChatRepository;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.Listing;
+import com.example.a2hauto.model.Message;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private static final String TAG = "MainActivity";
     private static final float MINI_HEADER_FADE_START = 0.38f;
     private static final float MINI_HEADER_FADE_END = 0.72f;
+    private static final long UNREAD_POLLING_INTERVAL_MS = 10000L;
     private RecyclerView rvVehicles;
     private VehicleAdapter adapter;
     private ProgressBar progressBar;
@@ -62,11 +65,21 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private TextView tvMiniHeaderAvatar;
     private ImageView ivNavAccountIcon;
     private TextView tvNavAccountLabel;
+    private TextView tvNavChatBadge;
     private View miniHeaderCard;
     private AppBarLayout appBarLayout;
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
+    private ChatRepository chatRepository;
     private final Set<String> cachedFavoriteListingIds = new HashSet<>();
+    private final android.os.Handler unreadHandler = new android.os.Handler();
+    private final Runnable unreadPollingRunnable = new Runnable() {
+        @Override
+        public void run() {
+            refreshUnreadBadge();
+            unreadHandler.postDelayed(this, UNREAD_POLLING_INTERVAL_MS);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,9 +105,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvMiniHeaderAvatar = findViewById(R.id.tvMiniHeaderAvatar);
         ivNavAccountIcon = findViewById(R.id.ivNavAccountIcon);
         tvNavAccountLabel = findViewById(R.id.tvNavAccountLabel);
+        tvNavChatBadge = findViewById(R.id.tvNavChatBadge);
         miniHeaderCard = findViewById(R.id.miniHeaderCard);
         appBarLayout = findViewById(R.id.appBarLayout);
         authSessionManager = new AuthSessionManager(this);
+        chatRepository = new ChatRepository(ApiClient.getApiService(), authSessionManager);
 
         rvVehicles.setLayoutManager(new LinearLayoutManager(this));
         rvVehicles.setHasFixedSize(true);
@@ -122,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvMiniHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         findViewById(R.id.navHome).setOnClickListener(v -> rvVehicles.smoothScrollToPosition(0));
         findViewById(R.id.navFavorites).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
-        findViewById(R.id.navChat).setOnClickListener(v -> startActivity(new Intent(this, ChatActivity.class)));
+        findViewById(R.id.navChat).setOnClickListener(v -> openChatScreen());
         findViewById(R.id.navPost).setOnClickListener(v -> handlePostAction());
         findViewById(R.id.navAccount).setOnClickListener(v -> handleAccountAction());
     }
@@ -133,6 +148,60 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         super.onResume();
         refreshAuthHeaderUi();
         syncFavoritesFromServer();
+        startUnreadPolling();
+        refreshUnreadBadge();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopUnreadPolling();
+    }
+
+    private void openChatScreen() {
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+        startActivity(new Intent(this, ChatActivity.class));
+    }
+
+    private void startUnreadPolling() {
+        stopUnreadPolling();
+        unreadHandler.postDelayed(unreadPollingRunnable, UNREAD_POLLING_INTERVAL_MS);
+    }
+
+    private void stopUnreadPolling() {
+        unreadHandler.removeCallbacks(unreadPollingRunnable);
+    }
+
+    private void refreshUnreadBadge() {
+        if (tvNavChatBadge == null) {
+            return;
+        }
+
+        if (!chatRepository.isLoggedIn()) {
+            tvNavChatBadge.setVisibility(View.GONE);
+            return;
+        }
+
+        chatRepository.getIncomingUnread(new ChatRepository.RepositoryCallback<List<Message>>() {
+            @Override
+            public void onSuccess(List<Message> data) {
+                int count = data == null ? 0 : data.size();
+                if (count <= 0) {
+                    tvNavChatBadge.setVisibility(View.GONE);
+                    return;
+                }
+                tvNavChatBadge.setText(String.valueOf(Math.min(count, 99)));
+                tvNavChatBadge.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onError(String message) {
+                tvNavChatBadge.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void openFavoritesScreen() {
