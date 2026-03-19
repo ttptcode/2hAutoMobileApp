@@ -3,6 +3,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="home_background">#FFF6F8FB</color>
+    <color name="background_soft">#FFF6F8FB</color>
     <color name="primary_teal">#FF12B4A6</color>
     <color name="primary_teal_dark">#FF0B8E84</color>
     <color name="primary_teal_soft">#FFE7FBF7</color>

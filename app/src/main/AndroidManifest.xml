@@ -32,6 +32,10 @@
             android:exported="false"
             android:label="Chọn danh mục" />
         <activity
+            android:name=".NewsListingsActivity"
+            android:exported="false"
+            android:label="Bài đăng" />
+        <activity
             android:name=".CreatePostActivity"
             android:exported="false"
             android:label="Đăng tin" />
@@ -63,6 +67,10 @@
             android:name=".FavoritesActivity"
             android:exported="false"
             android:label="Yêu thích" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:label="Tài khoản" />
     </application>
 
 </manifest>
