@@ -5,6 +5,12 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.example.a2hauto.R;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AuthSessionManager {
 
@@ -15,6 +21,7 @@ public class AuthSessionManager {
     private static final String KEY_AUTH_TOKEN = "auth_token";
     private static final String KEY_PENDING_FULL_NAME = "pending_full_name";
     private static final String KEY_PENDING_PHONE = "pending_phone";
+    private static final Pattern JWT_PATTERN = Pattern.compile("([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)");
 
     private final SharedPreferences sharedPreferences;
     private final Context appContext;
@@ -32,10 +39,11 @@ public class AuthSessionManager {
     public void saveSession(String fullName, String phone, String authToken) {
         String sanitizedName = fullName == null ? "" : fullName.trim();
         String normalizedPhone = AuthValidator.normalizePhone(phone);
+        String normalizedToken = normalizeAuthToken(authToken);
         sharedPreferences.edit()
                 .putString(KEY_FULL_NAME, sanitizedName)
                 .putString(KEY_PHONE, normalizedPhone)
-                .putString(KEY_AUTH_TOKEN, authToken == null ? "" : authToken)
+                .putString(KEY_AUTH_TOKEN, normalizedToken)
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .putBoolean(KEY_IS_LOGGED_IN, true)
@@ -71,7 +79,16 @@ public class AuthSessionManager {
     }
 
     public String getAuthToken() {
-        return sharedPreferences.getString(KEY_AUTH_TOKEN, "");
+        String rawToken = sharedPreferences.getString(KEY_AUTH_TOKEN, "");
+        String normalizedToken = normalizeAuthToken(rawToken);
+        if (!TextUtils.equals(rawToken, normalizedToken)) {
+            sharedPreferences.edit().putString(KEY_AUTH_TOKEN, normalizedToken).apply();
+        }
+        return normalizedToken;
+    }
+
+    public String getUserId() {
+        return JwtUtils.extractUserId(getAuthToken());
     }
 
     public String getPendingFullName() {
@@ -87,6 +104,108 @@ public class AuthSessionManager {
                 .remove(KEY_PENDING_FULL_NAME)
                 .remove(KEY_PENDING_PHONE)
                 .apply();
+    }
+
+    private String normalizeAuthToken(String rawToken) {
+        if (TextUtils.isEmpty(rawToken)) {
+            return "";
+        }
+
+        String trimmed = rawToken.trim();
+        if (trimmed.toLowerCase().startsWith("bearer ")) {
+            trimmed = trimmed.substring(7).trim();
+        }
+
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+
+        String directJwt = extractJwtCandidate(trimmed);
+        if (!TextUtils.isEmpty(directJwt)) {
+            return directJwt;
+        }
+
+        try {
+            // Parse JSON-like auth payloads first (e.g. {"token":"..."}) before dot checks.
+            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                JsonElement element = new JsonParser().parse(trimmed);
+                String nestedToken = findToken(element);
+                if (!TextUtils.isEmpty(nestedToken)) {
+                    return normalizeAuthToken(nestedToken);
+                }
+            }
+
+            if (trimmed.contains(".")) {
+                return trimmed;
+            }
+
+            JsonElement element = new JsonParser().parse(trimmed);
+            String nestedToken = findToken(element);
+            if (!TextUtils.isEmpty(nestedToken)) {
+                return normalizeAuthToken(nestedToken);
+            }
+
+            String fallbackJwt = extractJwtCandidate(trimmed);
+            return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
+        } catch (Exception ignored) {
+            String fallbackJwt = extractJwtCandidate(trimmed);
+            return TextUtils.isEmpty(fallbackJwt) ? trimmed : fallbackJwt;
+        }
+    }
+
+    private String findToken(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return "";
+        }
+
+        if (element.isJsonPrimitive()) {
+            String value = element.getAsString();
+            return value == null ? "" : value.trim();
+        }
+
+        if (!element.isJsonObject()) {
+            return "";
+        }
+
+        JsonObject object = element.getAsJsonObject();
+        String[] tokenKeys = new String[] {
+                "token",
+                "accessToken",
+                "access_token",
+                "jwt",
+                "jwtToken"
+        };
+
+        for (String key : tokenKeys) {
+            if (object.has(key) && !object.get(key).isJsonNull()) {
+                String value = findToken(object.get(key));
+                if (!TextUtils.isEmpty(value)) {
+                    return value;
+                }
+            }
+        }
+
+        if (object.has("data") && !object.get("data").isJsonNull()) {
+            String value = findToken(object.get("data"));
+            if (!TextUtils.isEmpty(value)) {
+                return value;
+            }
+        }
+
+        return "";
+    }
+
+    private String extractJwtCandidate(String input) {
+        if (TextUtils.isEmpty(input)) {
+            return "";
+        }
+
+        Matcher matcher = JWT_PATTERN.matcher(input.trim());
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return "";
     }
 }
 

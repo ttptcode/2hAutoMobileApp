@@ -54,6 +54,47 @@ public final class JwtUtils {
         return "";
     }
 
+    public static String extractUserId(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return "";
+        }
+
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return "";
+            }
+
+            byte[] decodedPayload = Base64.getUrlDecoder().decode(addPadding(parts[1]));
+            String payload = new String(decodedPayload, StandardCharsets.UTF_8);
+            JsonElement element = new JsonParser().parse(payload);
+            if (!element.isJsonObject()) {
+                return "";
+            }
+
+            JsonObject jsonObject = element.getAsJsonObject();
+            String[] candidateKeys = new String[] {
+                    "userId",
+                    "sub",
+                    "nameid",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+            };
+
+            for (String key : candidateKeys) {
+                if (jsonObject.has(key) && !jsonObject.get(key).isJsonNull()) {
+                    String value = jsonObject.get(key).getAsString();
+                    if (value != null && !value.trim().isEmpty()) {
+                        return value.trim();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignore malformed token content and fallback elsewhere.
+        }
+
+        return "";
+    }
+
     private static String addPadding(String value) {
         int padding = value.length() % 4;
         if (padding == 2) {
