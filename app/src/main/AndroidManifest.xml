@@ -28,6 +28,11 @@
             android:exported="false"
             android:label="Chi tiết bài đăng" />
         <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:label="Trò chuyện"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ChooseCategoryActivity"
             android:exported="false"
             android:label="Chọn danh mục" />

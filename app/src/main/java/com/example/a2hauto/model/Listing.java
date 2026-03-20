@@ -6,6 +6,8 @@ import java.io.Serializable;
 public class Listing implements Serializable {
     @SerializedName("listingId")
     private String listingId;
+    @SerializedName("userId")
+    private String userId;
     @SerializedName("listingType")
     private String listingType;
     @SerializedName("buyNowPrice")
@@ -30,6 +32,7 @@ public class Listing implements Serializable {
     private String endDate;
 
     public String getListingId() { return listingId; }
+    public String getUserId() { return userId; }
     public String getListingType() { return listingType; }
     public double getBuyNowPrice() { return buyNowPrice; }
     public String getUserId() { return userId; }

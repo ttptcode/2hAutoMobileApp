@@ -2,6 +2,11 @@ package com.example.a2hauto.api;
 
 import com.example.a2hauto.model.auth.LoginRequest;
 import com.example.a2hauto.model.auth.RegisterRequest;
+import com.example.a2hauto.model.Conversation;
+import com.example.a2hauto.model.FavoriteItem;
+import com.example.a2hauto.model.Message;
+import com.example.a2hauto.model.SendMessageRequest;
+import com.example.a2hauto.model.ToggleFavoriteRequest;
 import com.example.a2hauto.model.FeeCommission;
 import com.example.a2hauto.model.FeeCommissionResponse;
 import com.example.a2hauto.model.FavoriteItem;
@@ -31,6 +36,7 @@ import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
 import retrofit2.http.Body;
+import retrofit2.http.Query;
 
 
 public interface ApiService {
@@ -106,6 +112,34 @@ public interface ApiService {
     @POST("api/Favorites/toggle")
     Call<ApiResponse<JsonElement>> toggleFavorite(@Body ToggleFavoriteRequest request);
 
+    @GET("api/Conversations/{userId}")
+    Call<ApiResponse<List<Conversation>>> getConversations(
+            @Header("Authorization") String authorization,
+            @Path("userId") String userId
+    );
+
+    @POST("api/Conversations/create")
+    Call<ApiResponse<Conversation>> createConversation(
+            @Header("Authorization") String authorization,
+            @Query("listingId") String listingId,
+            @Query("buyerId") String buyerId
+    );
+
+    @GET("api/Messages/{conversationId}")
+    Call<ApiResponse<List<Message>>> getMessages(
+            @Header("Authorization") String authorization,
+            @Path("conversationId") String conversationId
+    );
+
+    @GET("api/Messages/incoming")
+    Call<ApiResponse<List<Message>>> getIncomingMessages(
+            @Header("Authorization") String authorization
+    );
+
+    @POST("api/Messages")
+    Call<ApiResponse<Message>> sendMessage(
+            @Header("Authorization") String authorization,
+            @Body SendMessageRequest request
         @GET("api/UserPackages")
         Call<ApiResponse<List<FeeCommission>>> getUserPackages();
 

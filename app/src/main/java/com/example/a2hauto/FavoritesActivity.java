@@ -121,6 +121,9 @@ public class FavoritesActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> deleteSelectedFavorites())
                 .show();
         });
+
+        bindSelectionUi();
+        fetchFavorites();
         
         setupBottomNavigation();
 

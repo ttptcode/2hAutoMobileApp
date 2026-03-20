@@ -1,9 +1,11 @@
 package com.example.a2hauto;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -22,6 +24,16 @@ import com.example.a2hauto.adapter.VehicleAdapter;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.chat.ChatRepository;
+import com.example.a2hauto.auth.LoginDialogFragment;
+import com.example.a2hauto.auth.RegisterDialogFragment;
+import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.FavoriteItem;
+
+import com.example.a2hauto.model.ToggleFavoriteRequest;
+
+import com.google.gson.JsonElement;
+
 import com.example.a2hauto.auth.JwtUtils;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
@@ -59,6 +71,7 @@ public class DetailActivity extends AppCompatActivity implements
 
     private ApiService apiService;
     private AuthSessionManager authSessionManager;
+    private ChatRepository chatRepository;
 
     private View btnHeaderUpgrade;
     private View btnHeaderLogin;
@@ -70,6 +83,8 @@ public class DetailActivity extends AppCompatActivity implements
     private TextView tvMediaIndicator;
     private TextView tvRelatedEmpty;
     private ProgressBar progressRelated;
+    private MaterialButton btnDetailChat;
+    private MaterialButton btnDetailContact;
     private VehicleAdapter relatedAdapter;
     private ViewPager2 vpDetailMedia;
     private View btnMediaPrev;
@@ -106,6 +121,7 @@ public class DetailActivity extends AppCompatActivity implements
 
         apiService = ApiClient.getApiService();
         authSessionManager = new AuthSessionManager(this);
+        chatRepository = new ChatRepository(ApiClient.getApiService(), authSessionManager);
 
         token = sanitizeToken(authSessionManager.getAuthToken());
         currentUserId = JwtUtils.extractUserId(token);
@@ -260,6 +276,7 @@ public class DetailActivity extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
         refreshAuthHeaderUi();
+        updateDetailActionButtonsVisibility();
         token = sanitizeToken(authSessionManager.getAuthToken());
         currentUserId = JwtUtils.extractUserId(token);
     }
@@ -272,6 +289,75 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void setupHeaderActions() {
+        findViewById(R.id.btnDetailBackSmall).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
+        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> onFavoriteClicked());
+        btnDetailChat = findViewById(R.id.btnDetailChat);
+        btnDetailContact = findViewById(R.id.btnDetailContact);
+        btnDetailChat.setOnClickListener(v -> openChatFromDetail());
+        btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
+        tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        updateDetailActionButtonsVisibility();
+    }
+
+    private void openChatFromDetail() {
+        if (!chatRepository.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+
+        String listingId = currentListing == null ? "" : currentListing.getListingId();
+        String buyerId = authSessionManager.getUserId();
+        String sellerId = currentListing == null ? "" : currentListing.getUserId();
+        if (TextUtils.isEmpty(listingId) || TextUtils.isEmpty(buyerId)) {
+            Toast.makeText(this, R.string.chat_open_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!TextUtils.isEmpty(sellerId) && TextUtils.equals(sellerId, buyerId)) {
+            return;
+        }
+
+        chatRepository.createConversation(listingId, buyerId, new ChatRepository.RepositoryCallback<com.example.a2hauto.model.Conversation>() {
+            @Override
+            public void onSuccess(com.example.a2hauto.model.Conversation data) {
+                Intent intent = new Intent(DetailActivity.this, ChatActivity.class);
+                if (data != null && !TextUtils.isEmpty(data.getConversationId())) {
+                    intent.putExtra(ChatActivity.EXTRA_OPEN_CONVERSATION_ID, data.getConversationId());
+                }
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(DetailActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateDetailActionButtonsVisibility() {
+        if (btnDetailChat == null || btnDetailContact == null || currentListing == null) {
+            return;
+        }
+
+        String currentUserId = authSessionManager == null ? "" : authSessionManager.getUserId();
+        String sellerId = currentListing.getUserId();
+        boolean isOwnerViewingOwnPost = !TextUtils.isEmpty(currentUserId)
+                && !TextUtils.isEmpty(sellerId)
+                && TextUtils.equals(currentUserId, sellerId);
+
+        btnDetailChat.setVisibility(isOwnerViewingOwnPost ? View.GONE : View.VISIBLE);
+
+        ViewGroup.LayoutParams baseParams = btnDetailContact.getLayoutParams();
+        if (!(baseParams instanceof LinearLayout.LayoutParams)) {
+            return;
+        }
+
+        LinearLayout.LayoutParams contactParams = (LinearLayout.LayoutParams) baseParams;
+        int defaultSpacing = (int) (8 * getResources().getDisplayMetrics().density);
+        contactParams.setMarginStart(isOwnerViewingOwnPost ? 0 : defaultSpacing);
+        btnDetailContact.setLayoutParams(contactParams);
         View backBtn = findViewById(R.id.btnDetailBackSmall);
         if (backBtn != null) {
             backBtn.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
