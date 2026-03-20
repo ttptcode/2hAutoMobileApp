@@ -28,6 +28,7 @@ public class NewsListingAdapter extends RecyclerView.Adapter<NewsListingAdapter.
         void onToggleVisibility(Listing listing, boolean hide);
         void onViewListing(Listing listing);
         void onDeleteListing(Listing listing);
+        void onEditListing(Listing listing);
     }
 
     private final List<Listing> listings;
@@ -76,6 +77,15 @@ public class NewsListingAdapter extends RecyclerView.Adapter<NewsListingAdapter.
                 actionListener.onDeleteListing(listing);
             }
         });
+
+        String status = (listing != null && listing.getStatus() != null) ? listing.getStatus().trim().toLowerCase(Locale.ROOT) : "";
+        boolean isDraft = status.contains("draft");
+        holder.btnEditListing.setVisibility(isDraft ? View.VISIBLE : View.GONE);
+        holder.btnEditListing.setOnClickListener(view -> {
+            if (actionListener != null) {
+                actionListener.onEditListing(listing);
+            }
+        });
     }
 
     @Override
@@ -105,6 +115,14 @@ public class NewsListingAdapter extends RecyclerView.Adapter<NewsListingAdapter.
         }
 
         String status = listing.getStatus();
+        String date = listing.getCreatedAt();
+        if (TextUtils.isEmpty(status)) {
+            return TextUtils.isEmpty(date) ? "" : date;
+        }
+        if (TextUtils.isEmpty(date)) {
+            return status;
+        }
+        return status + " • " + date;
         String endDate = listing.getEndDate();
         if (TextUtils.isEmpty(status)) {
             return TextUtils.isEmpty(endDate) ? "" : endDate;
@@ -151,6 +169,7 @@ public class NewsListingAdapter extends RecyclerView.Adapter<NewsListingAdapter.
         private final SwitchCompat switchHideListing;
         private final ImageButton btnViewListing;
         private final ImageButton btnDeleteListing;
+        private final ImageButton btnEditListing;
 
         NewsListingViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -161,6 +180,7 @@ public class NewsListingAdapter extends RecyclerView.Adapter<NewsListingAdapter.
             switchHideListing = itemView.findViewById(R.id.switchHideListing);
             btnViewListing = itemView.findViewById(R.id.btnViewListing);
             btnDeleteListing = itemView.findViewById(R.id.btnDeleteListing);
+            btnEditListing = itemView.findViewById(R.id.btnEditListing);
         }
     }
 }

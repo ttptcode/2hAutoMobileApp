@@ -51,10 +51,16 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp" />
 
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
                 <ImageButton
                     android:id="@+id/btnViewListing"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:layout_marginStart="8dp"
                     android:background="@android:color/transparent"
                     android:contentDescription="@string/news_action_view"
@@ -63,11 +69,23 @@
                     app:tint="@color/text_secondary" />
 
                 <ImageButton
+                    android:id="@+id/btnEditListing"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="2dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/news_action_edit"
+                    android:padding="6dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:visibility="gone"
+                    app:tint="@color/text_secondary" />
+
+                <ImageButton
                     android:id="@+id/btnDeleteListing"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_marginStart="2dp"
-                    android:background="@android:color/transparent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/news_action_delete"
                     android:padding="6dp"
                     android:src="@android:drawable/ic_menu_delete"

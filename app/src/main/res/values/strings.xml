@@ -56,6 +56,7 @@
     <string name="news_updated_prefix">Cập nhật: %1$s</string>
     <string name="news_action_hide_label">Ẩn tin:</string>
     <string name="news_action_view">Xem</string>
+    <string name="news_action_edit">Sửa</string>
     <string name="news_action_delete">Xóa</string>
     <string name="news_delete_confirm_title">Xóa bài đăng</string>
     <string name="news_delete_confirm_message">Bạn chắc chắn muốn xóa bài đăng này?</string>
@@ -69,6 +70,7 @@
     <string name="news_dialog_title">Nội dung bài đăng</string>
     <string name="news_dialog_content">Tiêu đề: %1$s\n\nGiá: %2$s\n\nTrạng thái: %3$s\n\nHết hạn: %4$s\n\nMô tả: %5$s\n\nĐịa chỉ: %6$s</string>
     <string name="news_dialog_value_missing">Chưa cập nhật</string>
+    <string name="news_price_contact">Liên hệ</string>
     <string name="review_reviewer_fallback">Người dùng ẩn danh</string>
     <string name="review_section_title">Đánh giá người bán</string>
     <string name="review_input_hint">Viết đánh giá của bạn...</string>

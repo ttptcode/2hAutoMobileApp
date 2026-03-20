@@ -4,6 +4,8 @@ import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -28,6 +30,8 @@ import com.google.android.material.textfield.TextInputLayout;
 
 public class LoginDialogFragment extends DialogFragment {
 
+    private static final long LOGIN_TIMEOUT_MS = 20_000L;
+
     public interface LoginDialogListener {
         void onLoginSuccess(String displayName);
 
@@ -48,6 +52,8 @@ public class LoginDialogFragment extends DialogFragment {
     private TextView tvForgotPassword;
     private TextView tvOpenRegister;
     private MaterialCardView cardGoogleLogin;
+    private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private Runnable loginTimeoutRunnable;
 
     @NonNull
     @Override
@@ -158,29 +164,44 @@ public class LoginDialogFragment extends DialogFragment {
         }
 
         setLoading(true);
+        startLoginTimeoutWatchdog();
         authRepository.login(phone, password, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(String token, String message) {
                 if (!isAdded()) {
+                    stopLoginTimeoutWatchdog();
                     return;
                 }
 
-                String displayName = resolveDisplayNameAfterLogin(phone, token);
-                authSessionManager.saveSession(displayName, phone, token);
-                displayName = authSessionManager.getDisplayName();
-                Toast.makeText(requireContext(), getString(R.string.login_success, displayName), Toast.LENGTH_SHORT).show();
-                if (getActivity() instanceof LoginDialogListener) {
-                    ((LoginDialogListener) getActivity()).onLoginSuccess(displayName);
+                stopLoginTimeoutWatchdog();
+                try {
+                    String displayName = resolveDisplayNameAfterLogin(phone, token);
+                    authSessionManager.saveSession(displayName, phone, token);
+                    displayName = authSessionManager.getDisplayName();
+                    Toast.makeText(requireContext(), getString(R.string.login_success, displayName), Toast.LENGTH_SHORT).show();
+                    if (getActivity() instanceof LoginDialogListener) {
+                        ((LoginDialogListener) getActivity()).onLoginSuccess(displayName);
+                    }
+                    setLoading(false);
+                    dismissAllowingStateLoss();
+                } catch (Exception exception) {
+                    setLoading(false);
+                    String safeMessage = TextUtils.isEmpty(exception.getMessage())
+                            ? getString(R.string.auth_unknown_error)
+                            : exception.getMessage();
+                    tilPassword.setError(safeMessage);
+                    Toast.makeText(requireContext(), safeMessage, Toast.LENGTH_SHORT).show();
                 }
-                dismissAllowingStateLoss();
             }
 
             @Override
             public void onError(String message) {
                 if (!isAdded()) {
+                    stopLoginTimeoutWatchdog();
                     return;
                 }
 
+                stopLoginTimeoutWatchdog();
                 setLoading(false);
                 tilPassword.setError(message);
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
@@ -237,6 +258,33 @@ public class LoginDialogFragment extends DialogFragment {
         if (dialog != null) {
             dialog.setCancelable(!isLoading);
             dialog.setCanceledOnTouchOutside(!isLoading);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        stopLoginTimeoutWatchdog();
+        super.onDestroyView();
+    }
+
+    private void startLoginTimeoutWatchdog() {
+        stopLoginTimeoutWatchdog();
+        loginTimeoutRunnable = () -> {
+            if (!isAdded()) {
+                return;
+            }
+            setLoading(false);
+            String timeoutMessage = getString(R.string.auth_network_error);
+            tilPassword.setError(timeoutMessage);
+            Toast.makeText(requireContext(), timeoutMessage, Toast.LENGTH_SHORT).show();
+        };
+        timeoutHandler.postDelayed(loginTimeoutRunnable, LOGIN_TIMEOUT_MS);
+    }
+
+    private void stopLoginTimeoutWatchdog() {
+        if (loginTimeoutRunnable != null) {
+            timeoutHandler.removeCallbacks(loginTimeoutRunnable);
+            loginTimeoutRunnable = null;
         }
     }
 

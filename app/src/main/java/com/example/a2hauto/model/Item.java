@@ -7,6 +7,8 @@ import java.util.List;
 public class Item implements Serializable {
     @SerializedName("itemId")
     private String itemId;
+    @SerializedName("itemTypeId")
+    private String itemTypeId;
     @SerializedName("title")
     private String title;
     @SerializedName("serialNumber")
@@ -48,6 +50,7 @@ public class Item implements Serializable {
 
     // Getters
     public String getItemId() { return itemId; }
+    public String getItemTypeId() { return itemTypeId; }
     public String getTitle() { return title; }
     public String getSerialNumber() { return serialNumber; }
     public String getItemTypeName() { return itemTypeName; }

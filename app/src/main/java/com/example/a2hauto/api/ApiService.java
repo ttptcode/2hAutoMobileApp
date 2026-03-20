@@ -93,6 +93,14 @@ public interface ApiService {
             @Part MultipartBody.Part Video
     );
 
+    @Multipart
+    @PUT("api/Listings/with-item")
+    Call<ApiResponse<Listing>> updateListingWithItemWithFiles(
+            @PartMap Map<String, RequestBody> fields,
+            @Part List<MultipartBody.Part> Images,
+            @Part MultipartBody.Part Video
+    );
+
     @PATCH("api/Listings/{listingId}/toggle-status")
     Call<ApiResponse<Void>> toggleStatus(@Path("listingId") String listingId);
 
