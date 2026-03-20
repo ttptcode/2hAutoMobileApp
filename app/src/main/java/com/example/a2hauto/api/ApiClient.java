@@ -47,4 +47,18 @@ public final class ApiClient {
         }
         return retrofit.create(ApiService.class);
     }
+
+    public static ApiService getApiService(Context context) {
+        // Tạo OkHttpClient với AuthInterceptor để tự động thêm token
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(new AuthInterceptor(context));
+
+        Retrofit retrofitWithAuth = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .client(httpClient.build())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        return retrofitWithAuth.create(ApiService.class);
+    }
 }

@@ -1,9 +1,11 @@
 package com.example.a2hauto;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -14,13 +16,24 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
-import com.bumptech.glide.Glide;
+import com.example.a2hauto.adapter.DetailMediaAdapter;
 import com.example.a2hauto.adapter.ReviewAdapter;
 import com.example.a2hauto.adapter.VehicleAdapter;
 import com.example.a2hauto.api.ApiClient;
 import com.example.a2hauto.api.ApiService;
 import com.example.a2hauto.auth.AuthSessionManager;
+import com.example.a2hauto.chat.ChatRepository;
+import com.example.a2hauto.auth.LoginDialogFragment;
+import com.example.a2hauto.auth.RegisterDialogFragment;
+import com.example.a2hauto.model.ApiResponse;
+import com.example.a2hauto.model.FavoriteItem;
+
+import com.example.a2hauto.model.ToggleFavoriteRequest;
+
+import com.google.gson.JsonElement;
+
 import com.example.a2hauto.auth.JwtUtils;
 import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
@@ -40,8 +53,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -52,9 +67,11 @@ public class DetailActivity extends AppCompatActivity implements
         RegisterDialogFragment.RegisterDialogListener {
 
     private static final int SINGLE_COLUMN_BREAKPOINT_DP = 360;
+    private static final String EXTRA_LISTING = "listing";
 
     private ApiService apiService;
     private AuthSessionManager authSessionManager;
+    private ChatRepository chatRepository;
 
     private View btnHeaderUpgrade;
     private View btnHeaderLogin;
@@ -63,9 +80,17 @@ public class DetailActivity extends AppCompatActivity implements
 
     private TextView tvDetailSpecsLeft;
     private TextView tvDetailSpecsRight;
+    private TextView tvMediaIndicator;
     private TextView tvRelatedEmpty;
     private ProgressBar progressRelated;
+    private MaterialButton btnDetailChat;
+    private MaterialButton btnDetailContact;
     private VehicleAdapter relatedAdapter;
+    private ViewPager2 vpDetailMedia;
+    private View btnMediaPrev;
+    private View btnMediaNext;
+    private DetailMediaAdapter detailMediaAdapter;
+    private final List<DetailMediaAdapter.MediaItem> detailMediaItems = new ArrayList<>();
 
     private RecyclerView rvReviews;
     private ProgressBar progressReviews;
@@ -88,7 +113,7 @@ public class DetailActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
-        currentListing = (Listing) getIntent().getSerializableExtra("listing");
+        currentListing = (Listing) getIntent().getSerializableExtra(EXTRA_LISTING);
         if (currentListing == null) {
             finish();
             return;
@@ -96,6 +121,7 @@ public class DetailActivity extends AppCompatActivity implements
 
         apiService = ApiClient.getApiService();
         authSessionManager = new AuthSessionManager(this);
+        chatRepository = new ChatRepository(ApiClient.getApiService(), authSessionManager);
 
         token = sanitizeToken(authSessionManager.getAuthToken());
         currentUserId = JwtUtils.extractUserId(token);
@@ -123,11 +149,16 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void bindListingData() {
-        ImageView ivDetail = findViewById(R.id.ivDetail);
         TextView tvDetailName = findViewById(R.id.tvDetailName);
         TextView tvDetailPrice = findViewById(R.id.tvDetailPrice);
         TextView tvDetailDesc = findViewById(R.id.tvDetailDesc);
         TextView tvDetailSeller = findViewById(R.id.tvDetailSeller);
+
+        if (tvDetailName == null || tvDetailPrice == null || tvDetailDesc == null || tvDetailSeller == null) {
+            Toast.makeText(this, R.string.auth_unknown_error, Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         tvDetailName.setText(currentListing.getDisplayTitle());
         
@@ -135,6 +166,7 @@ public class DetailActivity extends AppCompatActivity implements
         tvDetailPrice.setText(formatter.format(currentListing.getBuyNowPrice()));
 
         Item item = currentListing.getItem();
+        setupMediaGallery(item);
         bindSpecs(item);
 
         String detail = currentListing.getDetail();
@@ -149,22 +181,102 @@ public class DetailActivity extends AppCompatActivity implements
                 ? currentListing.getAddress()
                 : "Chưa cập nhật địa chỉ";
         tvDetailSeller.setText(String.format("Người bán: %s\nĐịa chỉ: %s", seller, address));
+    }
 
-        String imageUrl = null;
-        if (item != null && item.getImageUrls() != null && !item.getImageUrls().isEmpty()) {
-            imageUrl = item.getImageUrls().get(0);
+    private void setupMediaGallery(Item item) {
+        vpDetailMedia = findViewById(R.id.vpDetailMedia);
+        btnMediaPrev = findViewById(R.id.btnMediaPrev);
+        btnMediaNext = findViewById(R.id.btnMediaNext);
+        tvMediaIndicator = findViewById(R.id.tvMediaIndicator);
+
+        if (vpDetailMedia == null) {
+            return;
         }
 
-        Glide.with(this)
-                .load(imageUrl)
-                .placeholder(android.R.drawable.ic_menu_gallery)
-                .into(ivDetail);
+        buildDetailMediaItems(item);
+        detailMediaAdapter = new DetailMediaAdapter(detailMediaItems);
+        vpDetailMedia.setAdapter(detailMediaAdapter);
+        vpDetailMedia.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                updateMediaControls(position);
+            }
+        });
+
+        if (btnMediaPrev != null) {
+            btnMediaPrev.setOnClickListener(v -> {
+                int current = vpDetailMedia.getCurrentItem();
+                if (current > 0) {
+                    vpDetailMedia.setCurrentItem(current - 1, true);
+                }
+            });
+        }
+
+        if (btnMediaNext != null) {
+            btnMediaNext.setOnClickListener(v -> {
+                int current = vpDetailMedia.getCurrentItem();
+                int last = detailMediaItems.size() - 1;
+                if (current < last) {
+                    vpDetailMedia.setCurrentItem(current + 1, true);
+                }
+            });
+        }
+
+        updateMediaControls(0);
+    }
+
+    private void buildDetailMediaItems(Item item) {
+        detailMediaItems.clear();
+        Set<String> addedUrls = new LinkedHashSet<>();
+
+        if (item != null && item.getImageUrls() != null) {
+            for (String imageUrl : item.getImageUrls()) {
+                if (!TextUtils.isEmpty(imageUrl) && addedUrls.add(imageUrl)) {
+                    detailMediaItems.add(new DetailMediaAdapter.MediaItem(DetailMediaAdapter.TYPE_IMAGE, imageUrl));
+                }
+            }
+        }
+
+        if (item != null && item.getVideoUrls() != null) {
+            for (String videoUrl : item.getVideoUrls()) {
+                if (!TextUtils.isEmpty(videoUrl) && addedUrls.add(videoUrl)) {
+                    detailMediaItems.add(new DetailMediaAdapter.MediaItem(DetailMediaAdapter.TYPE_VIDEO, videoUrl));
+                }
+            }
+        }
+
+        if (item != null && !TextUtils.isEmpty(item.getVideoUrl()) && addedUrls.add(item.getVideoUrl())) {
+            detailMediaItems.add(new DetailMediaAdapter.MediaItem(DetailMediaAdapter.TYPE_VIDEO, item.getVideoUrl()));
+        }
+
+        if (detailMediaItems.isEmpty()) {
+            detailMediaItems.add(new DetailMediaAdapter.MediaItem(DetailMediaAdapter.TYPE_IMAGE, null));
+        }
+    }
+
+    private void updateMediaControls(int position) {
+        int total = detailMediaItems.size();
+        if (btnMediaPrev != null && btnMediaNext != null) {
+            if (total <= 1) {
+                btnMediaPrev.setVisibility(View.GONE);
+                btnMediaNext.setVisibility(View.GONE);
+            } else {
+                btnMediaPrev.setVisibility(position == 0 ? View.INVISIBLE : View.VISIBLE);
+                btnMediaNext.setVisibility(position >= total - 1 ? View.INVISIBLE : View.VISIBLE);
+            }
+        }
+
+        if (tvMediaIndicator != null) {
+            tvMediaIndicator.setText(getString(R.string.detail_media_indicator_format, position + 1, total));
+            tvMediaIndicator.setVisibility(total > 1 ? View.VISIBLE : View.GONE);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshAuthHeaderUi();
+        updateDetailActionButtonsVisibility();
         token = sanitizeToken(authSessionManager.getAuthToken());
         currentUserId = JwtUtils.extractUserId(token);
     }
@@ -177,24 +289,99 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void setupHeaderActions() {
-        View backBtn = findViewById(R.id.btnDetailBackSmall);
-        if (backBtn != null) backBtn.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
-        
-        View menuBtn = findViewById(R.id.btnMenu);
-        if (menuBtn != null) menuBtn.setOnClickListener(v -> showCategoryMenuDialog());
-        
-        View favBtn = findViewById(R.id.btnHeaderFavorite);
-        if (favBtn != null) favBtn.setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
-        
-        if (btnHeaderUpgrade != null) btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
-        if (btnHeaderLogin != null) btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
-        if (tvHeaderAvatar != null) tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
         findViewById(R.id.btnDetailBackSmall).setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
         findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> onFavoriteClicked());
+        btnDetailChat = findViewById(R.id.btnDetailChat);
+        btnDetailContact = findViewById(R.id.btnDetailContact);
+        btnDetailChat.setOnClickListener(v -> openChatFromDetail());
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        updateDetailActionButtonsVisibility();
+    }
+
+    private void openChatFromDetail() {
+        if (!chatRepository.isLoggedIn()) {
+            showLoginDialog();
+            return;
+        }
+
+        String listingId = currentListing == null ? "" : currentListing.getListingId();
+        String buyerId = authSessionManager.getUserId();
+        String sellerId = currentListing == null ? "" : currentListing.getUserId();
+        if (TextUtils.isEmpty(listingId) || TextUtils.isEmpty(buyerId)) {
+            Toast.makeText(this, R.string.chat_open_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!TextUtils.isEmpty(sellerId) && TextUtils.equals(sellerId, buyerId)) {
+            return;
+        }
+
+        chatRepository.createConversation(listingId, buyerId, new ChatRepository.RepositoryCallback<com.example.a2hauto.model.Conversation>() {
+            @Override
+            public void onSuccess(com.example.a2hauto.model.Conversation data) {
+                Intent intent = new Intent(DetailActivity.this, ChatActivity.class);
+                if (data != null && !TextUtils.isEmpty(data.getConversationId())) {
+                    intent.putExtra(ChatActivity.EXTRA_OPEN_CONVERSATION_ID, data.getConversationId());
+                }
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(DetailActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateDetailActionButtonsVisibility() {
+        if (btnDetailChat == null || btnDetailContact == null || currentListing == null) {
+            return;
+        }
+
+        String currentUserId = authSessionManager == null ? "" : authSessionManager.getUserId();
+        String sellerId = currentListing.getUserId();
+        boolean isOwnerViewingOwnPost = !TextUtils.isEmpty(currentUserId)
+                && !TextUtils.isEmpty(sellerId)
+                && TextUtils.equals(currentUserId, sellerId);
+
+        btnDetailChat.setVisibility(isOwnerViewingOwnPost ? View.GONE : View.VISIBLE);
+
+        ViewGroup.LayoutParams baseParams = btnDetailContact.getLayoutParams();
+        if (!(baseParams instanceof LinearLayout.LayoutParams)) {
+            return;
+        }
+
+        LinearLayout.LayoutParams contactParams = (LinearLayout.LayoutParams) baseParams;
+        int defaultSpacing = (int) (8 * getResources().getDisplayMetrics().density);
+        contactParams.setMarginStart(isOwnerViewingOwnPost ? 0 : defaultSpacing);
+        btnDetailContact.setLayoutParams(contactParams);
+        View backBtn = findViewById(R.id.btnDetailBackSmall);
+        if (backBtn != null) {
+            backBtn.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        }
+        
+        View menuBtn = findViewById(R.id.btnMenu);
+        if (menuBtn != null) {
+            menuBtn.setOnClickListener(v -> showCategoryMenuDialog());
+        }
+        
+        View favBtn = findViewById(R.id.btnHeaderFavorite);
+        if (favBtn != null) {
+            favBtn.setOnClickListener(v -> onFavoriteClicked());
+        }
+        
+        if (btnHeaderUpgrade != null) {
+            btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        }
+        if (btnHeaderLogin != null) {
+            btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
+        }
+        if (tvHeaderAvatar != null) {
+            tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
+        }
     }
 
     private void fetchInitialFavoriteState() {
@@ -521,11 +708,13 @@ public class DetailActivity extends AppCompatActivity implements
     }
 
     private void updateReviewInputUi() {
-        if (btnSubmitReview == null || etReviewComment == null) return;
+        if (btnSubmitReview == null || etReviewComment == null || ratingBarReview == null) return;
 
         boolean canReview = authSessionManager.isLoggedIn() && !TextUtils.isEmpty(token) && !TextUtils.isEmpty(currentUserId);
         btnSubmitReview.setEnabled(canReview);
         etReviewComment.setEnabled(canReview);
+        ratingBarReview.setEnabled(canReview);
+        ratingBarReview.setIsIndicator(!canReview);
         
         if (!canReview) {
             etReviewComment.setHint(R.string.review_login_to_comment);

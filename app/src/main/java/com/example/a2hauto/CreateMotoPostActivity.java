@@ -240,6 +240,78 @@ public class CreateMotoPostActivity extends AppCompatActivity {
                 ErrorHandler.handleNetworkError(CreateMotoPostActivity.this, t); 
             }
         };
+        final MultipartBody.Part finalVideoPart = videoPart;
+
+        if (isDraft) {
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateMotoPostActivity.this, response);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreateMotoPostActivity.this, t);
+                }
+            });
+            return;
+        }
+
+        PackageSelectionBottomSheet.show(this, packageId -> {
+            fields.put("FeeCommissionId", createPartFromString(packageId));
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateMotoPostActivity.this, response);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreateMotoPostActivity.this, t);
+                }
+            });
+        });
+    }
+
+    private void activateListing(String listingId) {
+        apiService.toggleStatus(listingId).enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful()) {
+                    finishSuccess("Đăng tin thành công!");
+                } else {
+                    finishSuccess("Bài đăng đã tạo ở chế độ Nháp (Lỗi kích hoạt)");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                finishSuccess("Bài đăng đã tạo ở chế độ Nháp (Lỗi kết nối)");
+            }
+        });
+    }
 
         if (isEditMode) apiService.updateListingWithItemWithFiles(fields, images, null).enqueue(cb);
         else apiService.createListing(fields, images, null).enqueue(cb);
@@ -257,5 +329,71 @@ public class CreateMotoPostActivity extends AppCompatActivity {
             os.close(); is.close();
             return MultipartBody.Part.createFormData(partName, f.getName(), RequestBody.create(MediaType.parse("image/jpeg"), f));
         } catch (Exception e) { return null; }
+            InputStream inputStream = getContentResolver().openInputStream(fileUri);
+            if (inputStream == null) return null;
+            
+            // Get original filename to extract extension
+            String originalFileName = getFileNameFromUri(fileUri);
+            android.util.Log.d("VideoUpload", "Original filename: " + originalFileName);
+            
+            // Extract extension from original filename
+            String extension = "";
+            if (originalFileName != null && originalFileName.contains(".")) {
+                extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                android.util.Log.d("VideoUpload", "Extracted extension: " + extension);
+            }
+            
+            // Create temp file with extension
+            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis() + extension);
+            android.util.Log.d("VideoUpload", "Created temp file with extension: " + file.getName());
+            
+            FileOutputStream outputStream = new FileOutputStream(file);
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) outputStream.write(buffer, 0, read);
+            outputStream.close();
+            inputStream.close();
+            
+            String mimeType = getContentResolver().getType(fileUri);
+            
+            android.util.Log.d("VideoUpload", "Original MIME from ContentResolver: " + mimeType);
+            android.util.Log.d("VideoUpload", "File URI: " + fileUri);
+            
+            if (mimeType == null || !mimeType.startsWith("video")) {
+                String extensionMime = getMimeTypeFromExtension(file.getName());
+                android.util.Log.d("VideoUpload", "Fallback MIME from extension: " + extensionMime);
+                if (extensionMime != null) {
+                    mimeType = extensionMime;
+                }
+            }
+            
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+            
+            android.util.Log.d("VideoUpload", "Final MIME type: " + mimeType);
+            android.util.Log.d("VideoUpload", "File name: " + file.getName() + ", File size: " + file.length());
+            
+            MediaType mediaType = MediaType.parse(mimeType);
+            RequestBody requestFile = RequestBody.create(mediaType, file);
+            return MultipartBody.Part.createFormData(partName, file.getName(), requestFile);
+        } catch (Exception e) {
+            android.util.Log.e("VideoUpload", "Error preparing file: " + e.getMessage(), e);
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String getMimeTypeFromExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".mp4")) return "video/mp4";
+        if (lowerName.endsWith(".avi")) return "video/x-msvideo";
+        if (lowerName.endsWith(".mov")) return "video/quicktime";
+        if (lowerName.endsWith(".wmv")) return "video/x-ms-wmv";
+        if (lowerName.endsWith(".mkv")) return "video/x-matroska";
+        if (lowerName.endsWith(".flv")) return "video/x-flv";
+        if (lowerName.endsWith(".webm")) return "video/webm";
+        if (lowerName.endsWith(".m4v")) return "video/mp4";
+        return "video/mp4";
     }
 }

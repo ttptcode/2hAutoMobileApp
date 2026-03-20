@@ -28,6 +28,11 @@
             android:exported="false"
             android:label="Chi tiết bài đăng" />
         <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:label="Trò chuyện"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ChooseCategoryActivity"
             android:exported="false"
             android:label="Chọn danh mục" />
@@ -71,6 +76,24 @@
             android:name=".ProfileActivity"
             android:exported="false"
             android:label="Tài khoản" />
+        <activity
+            android:name=".PlanActivity"
+            android:exported="false"
+            android:label="Chọn gói dịch vụ" />
+        <activity
+            android:name=".PaymentActivity"
+            android:exported="true"
+            android:label="Thanh toán VNPay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Custom scheme for payment callback -->
+                <data
+                    android:scheme="yourapp"
+                    android:host="payment-callback" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

@@ -245,6 +245,69 @@ public class CreatePostActivity extends AppCompatActivity {
                 } else { 
                     btnSubmit.setEnabled(true); btnSubmit.setText("CẬP NHẬT");
                     ErrorHandler.handleErrorResponse(CreatePostActivity.this, response); 
+        final MultipartBody.Part finalVideoPart = videoPart;
+
+        if (isDraft) {
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreatePostActivity.this, response);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreatePostActivity.this, t);
+                }
+            });
+            return;
+        }
+
+        PackageSelectionBottomSheet.show(this, packageId -> {
+            fields.put("FeeCommissionId", createPartFromString(packageId));
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreatePostActivity.this, response);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreatePostActivity.this, t);
+                }
+            });
+        });
+    }
+
+    private void activateListing(String listingId) {
+        apiService.toggleStatus(listingId).enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful()) {
+                    finishSuccess("Đăng tin thành công!");
+                } else {
+                    finishSuccess("Bài đăng đã tạo ở chế độ Nháp (Lỗi kích hoạt)");
                 }
             }
             @Override

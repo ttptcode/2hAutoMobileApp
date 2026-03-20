@@ -123,6 +123,14 @@ public class NewsListingAdapter extends RecyclerView.Adapter<NewsListingAdapter.
             return status;
         }
         return status + " • " + date;
+        String endDate = listing.getEndDate();
+        if (TextUtils.isEmpty(status)) {
+            return TextUtils.isEmpty(endDate) ? "" : endDate;
+        }
+        if (TextUtils.isEmpty(endDate)) {
+            return status;
+        }
+        return status + " • " + endDate;
     }
 
     private String resolveFirstImage(Listing listing) {

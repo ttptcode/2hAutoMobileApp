@@ -391,6 +391,19 @@ public class CreateBikePostActivity extends AppCompatActivity {
                 public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         finishSuccess("Cập nhật bài đăng thành công!");
+        final MultipartBody.Part finalVideoPart = videoPart;
+
+        if (isDraft) {
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp xe đạp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
                     } else {
                         resetButtons();
                         ErrorHandler.handleErrorResponse(CreateBikePostActivity.this, response);
@@ -420,6 +433,29 @@ public class CreateBikePostActivity extends AppCompatActivity {
                     }
                 }
 
+                }
+            });
+            return;
+        }
+
+        PackageSelectionBottomSheet.show(this, packageId -> {
+            fields.put("FeeCommissionId", createPartFromString(packageId));
+            apiService.createListing(fields, imageParts, finalVideoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp xe đạp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateBikePostActivity.this, response);
+                    }
+                }
+
                 @Override
                 public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
                     resetButtons();
@@ -427,6 +463,7 @@ public class CreateBikePostActivity extends AppCompatActivity {
                 }
             });
         }
+        });
     }
 
     private void activateListing(String listingId) {
@@ -467,7 +504,21 @@ public class CreateBikePostActivity extends AppCompatActivity {
             InputStream inputStream = getContentResolver().openInputStream(fileUri);
             if (inputStream == null) return null;
             
-            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis());
+            // Get original filename to extract extension
+            String originalFileName = getFileNameFromUri(fileUri);
+            android.util.Log.d("VideoUpload", "Original filename: " + originalFileName);
+            
+            // Extract extension from original filename
+            String extension = "";
+            if (originalFileName != null && originalFileName.contains(".")) {
+                extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                android.util.Log.d("VideoUpload", "Extracted extension: " + extension);
+            }
+            
+            // Create temp file with extension
+            File file = new File(getCacheDir(), "upload_" + System.currentTimeMillis() + extension);
+            android.util.Log.d("VideoUpload", "Created temp file with extension: " + file.getName());
+            
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
             int read;
