@@ -295,15 +295,15 @@
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:minHeight="60dp"
+                android:minHeight="52dp"
                 android:orientation="vertical"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="10dp">
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp">
 
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@android:drawable/ic_menu_view"
+                    android:src="@drawable/ic_nav_home"
                     android:tint="@color/text_muted" />
 
                 <TextView
@@ -312,7 +312,8 @@
                     android:layout_marginTop="4dp"
                     android:text="@string/nav_home"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout
@@ -324,10 +325,10 @@
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:minHeight="60dp"
+                android:minHeight="52dp"
                 android:orientation="vertical"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="10dp">
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp">
 
                 <ImageView
                     android:layout_width="22dp"
@@ -341,7 +342,8 @@
                     android:layout_marginTop="4dp"
                     android:text="@string/nav_favorites"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout
@@ -353,10 +355,10 @@
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:minHeight="60dp"
+                android:minHeight="52dp"
                 android:orientation="vertical"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="10dp">
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="8dp">
 
                 <ImageView
                     android:layout_width="22dp"
@@ -370,7 +372,8 @@
                     android:layout_marginTop="4dp"
                     android:text="@string/nav_post"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout
@@ -383,10 +386,10 @@
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:minHeight="60dp"
+                android:minHeight="52dp"
                 android:orientation="vertical"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="10dp">
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp">
 
                 <FrameLayout
                     android:layout_width="wrap_content"
@@ -423,7 +426,8 @@
                     android:text="@string/nav_chat"
                     android:textColor="@color/primary_teal_dark"
                     android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout
@@ -436,10 +440,10 @@
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:minHeight="60dp"
+                android:minHeight="52dp"
                 android:orientation="vertical"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="10dp">
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp">
 
                 <ImageView
                     android:id="@+id/ivNavAccountIcon"
@@ -455,7 +459,8 @@
                     android:layout_marginTop="4dp"
                     android:text="@string/nav_account"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>
