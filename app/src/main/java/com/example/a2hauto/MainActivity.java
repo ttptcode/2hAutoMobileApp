@@ -2,10 +2,18 @@ package com.example.a2hauto;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.graphics.Rect;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -30,14 +38,18 @@ import com.example.a2hauto.auth.LoginDialogFragment;
 import com.example.a2hauto.auth.RegisterDialogFragment;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.FavoriteItem;
+import com.example.a2hauto.model.Item;
 import com.example.a2hauto.model.Listing;
 import com.example.a2hauto.model.Message;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +58,14 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity implements LoginDialogFragment.LoginDialogListener, RegisterDialogFragment.RegisterDialogListener {
+
+    private enum HomeCategoryFilter {
+        ALL,
+        CAR,
+        MOTORBIKE,
+        ELECTRIC,
+        ACCESSORIES
+    }
 
     private static final String TAG = "MainActivity";
     private static final float MINI_HEADER_FADE_START = 0.38f;
@@ -58,6 +78,16 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private TextView tvMiniListingCount;
     private TextView tvSectionSubtitle;
     private TextView tvEmptyState;
+    private TextView tvFilterStatus;
+    private android.widget.EditText etHeroSearch;
+    private android.widget.EditText etMiniSearch;
+    private View btnHeroClearSearch;
+    private View btnMiniClearSearch;
+    private TextView chipHomeAll;
+    private TextView chipHomeCar;
+    private TextView chipHomeMotorbike;
+    private TextView chipHomeElectric;
+    private TextView chipHomeAccessories;
     private View btnHeaderUpgrade;
     private View btnHeaderLogin;
     private View btnMiniHeaderLogin;
@@ -68,6 +98,13 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private TextView tvNavChatBadge;
     private View miniHeaderCard;
     private AppBarLayout appBarLayout;
+    private FrameLayout bottomNavContainer;
+    
+    // Navbar items
+    private LinearLayout navHome, navFavorites, navPost, navChat, navAccount;
+    private int currentNavItem = 0; // 0=Home, 1=Favorites, 2=Post, 3=Chat, 4=Account
+    private int previousNavItem = 0; // Track previous position for smart transitions
+    
     private AuthSessionManager authSessionManager;
     private ApiService apiService;
     private ChatRepository chatRepository;
@@ -80,6 +117,16 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             unreadHandler.postDelayed(this, UNREAD_POLLING_INTERVAL_MS);
         }
     };
+    private final Set<String> cachedFavoriteListingIds = new HashSet<>();
+    
+    // Gesture detection
+    private GestureDetector gestureDetector;
+    private static final int SWIPE_THRESHOLD = 100;
+    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+    private final List<Listing> allActiveListings = new ArrayList<>();
+    private String homeSearchQuery = "";
+    private HomeCategoryFilter selectedHomeCategory = HomeCategoryFilter.ALL;
+    private boolean isSyncingSearchInputs = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,7 +144,17 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvListingCount = findViewById(R.id.tvListingCount);
         tvMiniListingCount = findViewById(R.id.tvMiniListingCount);
         tvSectionSubtitle = findViewById(R.id.tvSectionSubtitle);
+        tvFilterStatus = findViewById(R.id.tvFilterStatus);
         tvEmptyState = findViewById(R.id.tvEmptyState);
+        etHeroSearch = findViewById(R.id.etHeroSearch);
+        etMiniSearch = findViewById(R.id.etMiniSearch);
+        btnHeroClearSearch = findViewById(R.id.btnHeroFilter);
+        btnMiniClearSearch = findViewById(R.id.btnMiniFilter);
+        chipHomeAll = findViewById(R.id.chipHomeAll);
+        chipHomeCar = findViewById(R.id.chipHomeCar);
+        chipHomeMotorbike = findViewById(R.id.chipHomeMotorbike);
+        chipHomeElectric = findViewById(R.id.chipHomeElectric);
+        chipHomeAccessories = findViewById(R.id.chipHomeAccessories);
         btnHeaderUpgrade = findViewById(R.id.btnHeaderUpgrade);
         btnHeaderLogin = findViewById(R.id.btnHeaderLogin);
         btnMiniHeaderLogin = findViewById(R.id.btnMiniHeaderLogin);
@@ -108,6 +165,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         tvNavChatBadge = findViewById(R.id.tvNavChatBadge);
         miniHeaderCard = findViewById(R.id.miniHeaderCard);
         appBarLayout = findViewById(R.id.appBarLayout);
+        bottomNavContainer = findViewById(R.id.bottomNavContainer);
         authSessionManager = new AuthSessionManager(this);
         chatRepository = new ChatRepository(ApiClient.getApiService(), authSessionManager);
 
@@ -115,9 +173,13 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         rvVehicles.setHasFixedSize(true);
         adapter = new VehicleAdapter(new ArrayList<>());
         rvVehicles.setAdapter(adapter);
+        updateHomeFilterUi();
+        attachSearchInputListeners();
 
         setupActions();
         setupMiniHeaderBehavior();
+        setupBottomNavigation();
+        setupGestureDetection();
         refreshAuthHeaderUi();
         initRetrofit();
         fetchListings();
@@ -126,11 +188,19 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
        private void setupActions() {
         findViewById(R.id.btnMenu).setOnClickListener(v -> showCategoryMenuDialog());
-        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
+        findViewById(R.id.btnHeaderFavorite).setOnClickListener(v -> openFavoritesScreen());
         findViewById(R.id.btnMiniMenu).setOnClickListener(v -> showCategoryMenuDialog());
-        findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> showComingSoon(getString(R.string.nav_favorites)));
-        findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
+        findViewById(R.id.btnMiniFavorite).setOnClickListener(v -> openFavoritesScreen());
+        btnHeroClearSearch.setOnClickListener(v -> clearSearchQuery());
+        btnMiniClearSearch.setOnClickListener(v -> clearSearchQuery());
+        chipHomeAll.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ALL));
+        chipHomeCar.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.CAR));
+        chipHomeMotorbike.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.MOTORBIKE));
+        chipHomeElectric.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ELECTRIC));
+        chipHomeAccessories.setOnClickListener(v -> setHomeCategoryFilter(HomeCategoryFilter.ACCESSORIES));
         btnHeaderUpgrade.setOnClickListener(v -> showUpgradeDialog());
+        findViewById(R.id.miniSearchBar).setOnClickListener(v -> showComingSoon(getString(R.string.search_hint)));
+        btnHeaderUpgrade.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
         btnHeaderLogin.setOnClickListener(v -> handleAccountAction());
         btnMiniHeaderLogin.setOnClickListener(v -> handleAccountAction());
         tvHeaderAvatar.setOnClickListener(v -> handleAccountAction());
@@ -202,6 +272,42 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                 tvNavChatBadge.setVisibility(View.GONE);
             }
         });
+        // Restore navigation highlight
+        if (currentNavItem != 0) {
+            selectNavItem(currentNavItem);
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        // Handle gesture detection for swipe
+        if (gestureDetector != null) {
+            gestureDetector.onTouchEvent(ev);
+        }
+
+        // Handle search input focus
+        if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
+            View focusedView = getCurrentFocus();
+            boolean focusedSearchInput = focusedView == etHeroSearch || focusedView == etMiniSearch;
+            if (focusedSearchInput) {
+                boolean touchInsideSearch = isTouchInsideView(etHeroSearch, ev) || isTouchInsideView(etMiniSearch, ev);
+                if (!touchInsideSearch) {
+                    finishHomeSearchInteraction(focusedView);
+                }
+            }
+        }
+        
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private boolean isTouchInsideView(View targetView, MotionEvent ev) {
+        if (targetView == null || ev == null || targetView.getVisibility() != View.VISIBLE) {
+            return false;
+        }
+
+        Rect hitRect = new Rect();
+        targetView.getGlobalVisibleRect(hitRect);
+        return hitRect.contains((int) ev.getRawX(), (int) ev.getRawY());
     }
 
     private void openFavoritesScreen() {
@@ -209,7 +315,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             showLoginDialog();
             return;
         }
+        previousNavItem = currentNavItem;
+        currentNavItem = 1;
         startActivity(new Intent(this, FavoritesActivity.class));
+        // Home(0) → Favorites(1): left to right
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
     private void setupMiniHeaderBehavior() {
@@ -233,13 +343,169 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         miniHeaderCard.setTranslationY((1f - progress) * -20f);
     }
 
+    private void setupBottomNavigation() {
+        // Inflate the bottom navigation bar layout
+        View navView = getLayoutInflater().inflate(R.layout.bottom_navigation_bar, bottomNavContainer, true);
+
+        // Initialize nav account icon and label from inflated view
+        ivNavAccountIcon = navView.findViewById(R.id.ivNavAccountIcon);
+        tvNavAccountLabel = navView.findViewById(R.id.tvNavAccountLabel);
+
+        // Get references to all nav items
+        navHome = navView.findViewById(R.id.navHome);
+        navFavorites = navView.findViewById(R.id.navFavorites);
+        navPost = navView.findViewById(R.id.navPost);
+        navChat = navView.findViewById(R.id.navChat);
+        navAccount = navView.findViewById(R.id.navAccount);
+
+            // Set up navigation click listeners with highlight
+            navHome.setOnClickListener(v -> {
+                selectNavItem(0);
+                rvVehicles.smoothScrollToPosition(0);
+            });
+            
+            navFavorites.setOnClickListener(v -> {
+                selectNavItem(1);
+                openFavoritesScreen();
+            });
+            
+            navPost.setOnClickListener(v -> {
+                selectNavItem(2);
+                handlePostAction();
+            });
+        
+        navChat.setOnClickListener(v -> {
+            selectNavItem(3);
+            showComingSoon(getString(R.string.nav_chat));
+        });
+        
+        navAccount.setOnClickListener(v -> {
+            selectNavItem(4);
+            handleAccountAction();
+        });
+        
+        // Set initial highlight
+        selectNavItem(0);
+    }
+
+    private void selectNavItem(int navIndex) {
+        // Remove highlight from all items
+        resetAllNavItems();
+        
+        // Highlight selected item
+        currentNavItem = navIndex;
+        LinearLayout selectedNav = null;
+        
+        switch (navIndex) {
+            case 0:
+                selectedNav = navHome;
+                break;
+            case 1:
+                selectedNav = navFavorites;
+                break;
+            case 2:
+                selectedNav = navPost;
+                break;
+            case 3:
+                selectedNav = navChat;
+                break;
+            case 4:
+                selectedNav = navAccount;
+                break;
+        }
+        
+        if (selectedNav != null) {
+            highlightNavItem(selectedNav);
+        }
+    }
+
+    private void resetAllNavItems() {
+        if (navHome != null) unhighlightNavItem(navHome);
+        if (navFavorites != null) unhighlightNavItem(navFavorites);
+        if (navPost != null) unhighlightNavItem(navPost);
+        if (navChat != null) unhighlightNavItem(navChat);
+        if (navAccount != null) unhighlightNavItem(navAccount);
+    }
+
+    private void highlightNavItem(LinearLayout navItem) {
+        // Add scale animation for transition
+        navItem.animate()
+                .scaleX(1.05f)
+                .scaleY(1.05f)
+                .setDuration(200)
+                .start();
+        
+        // Set background and update colors
+        navItem.setBackgroundResource(R.drawable.bg_nav_active);
+        
+        // Update icon and text color for highlighted state
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            android.view.View child = navItem.getChildAt(i);
+            if (child instanceof ImageView) {
+                ((ImageView) child).setColorFilter(ContextCompat.getColor(this, R.color.primary_teal_dark), android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof TextView) {
+                ((TextView) child).setTextColor(ContextCompat.getColor(this, R.color.primary_teal_dark));
+                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.BOLD);
+            }
+        }
+    }
+
+    private void unhighlightNavItem(LinearLayout navItem) {
+        // Reset scale animation
+        navItem.animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(200)
+                .start();
+        
+        // Remove background
+        navItem.setBackground(null);
+        
+        // Reset icon and text color for unhighlighted state
+        for (int i = 0; i < navItem.getChildCount(); i++) {
+            android.view.View child = navItem.getChildAt(i);
+            if (child instanceof ImageView) {
+                ((ImageView) child).setColorFilter(ContextCompat.getColor(this, R.color.text_muted), android.graphics.PorterDuff.Mode.SRC_IN);
+            } else if (child instanceof TextView) {
+                ((TextView) child).setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.NORMAL);
+            }
+        }
+    }
+
     private void handleAccountAction() {
-        if (authSessionManager.isLoggedIn()) {
-            showAccountDialog();
+        if (!authSessionManager.isLoggedIn()) {
+            showLoginDialog();
             return;
         }
 
-        showLoginDialog();
+        showAccountBottomSheet();
+    }
+
+    private void showAccountBottomSheet() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View contentView = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_account_actions, findViewById(android.R.id.content), false);
+        dialog.setContentView(contentView);
+
+        View optionProfile = contentView.findViewById(R.id.optionProfile);
+        View optionLogout = contentView.findViewById(R.id.optionLogout);
+
+        optionProfile.setOnClickListener(v -> {
+            dialog.dismiss();
+            startActivity(new Intent(this, ProfileActivity.class));
+        });
+
+        optionLogout.setOnClickListener(v -> {
+            dialog.dismiss();
+            authSessionManager.logout();
+            refreshAuthHeaderUi();
+            syncFavoritesFromServer();
+            Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
+            showLoginDialog();
+        });
+
+        dialog.show();
     }
 
     private void showLoginDialog() {
@@ -252,24 +518,6 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         if (getSupportFragmentManager().findFragmentByTag(RegisterDialogFragment.TAG) == null) {
             new RegisterDialogFragment().show(getSupportFragmentManager(), RegisterDialogFragment.TAG);
         }
-    }
-
-    private void showAccountDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.account_dialog_title)
-                .setMessage(getString(
-                        R.string.account_dialog_message,
-                        authSessionManager.getDisplayName(),
-                        authSessionManager.getPhoneNumber()
-                ))
-                .setNegativeButton(android.R.string.cancel, null)
-                .setNeutralButton(R.string.action_upgrade, (dialog, which) -> showUpgradeDialog())
-                .setPositiveButton(R.string.action_logout, (dialog, which) -> {
-                    authSessionManager.logout();
-                    refreshAuthHeaderUi();
-                    Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
-                })
-                .show();
     }
 
     private void showUpgradeDialog() {
@@ -288,7 +536,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             return;
         }
 
-        startActivity(new Intent(this, ChooseCategoryActivity.class));
+        previousNavItem = currentNavItem;
+        currentNavItem = 2;
+        startActivity(new Intent(this, NewsListingsActivity.class));
+        // Home(0) → Post(2): left to right
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
     private void showCategoryMenuDialog() {
@@ -297,13 +549,11 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         LinearLayout optionContainer = dialogView.findViewById(R.id.menuOptionContainer);
 
         List<CategoryMenuItem> menuItems = new ArrayList<>();
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_car), R.drawable.ic_menu_category_car));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_motorbike), R.drawable.ic_menu_category_motorbike));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_truck), R.drawable.ic_menu_category_truck));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_electric), R.drawable.ic_menu_category_electric));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_bicycle), R.drawable.ic_menu_category_bicycle));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_other_vehicle), android.R.drawable.ic_menu_mapmode));
-        menuItems.add(new CategoryMenuItem(getString(R.string.menu_option_spare_parts), android.R.drawable.ic_menu_manage));
+        menuItems.add(new CategoryMenuItem(getString(R.string.home_filter_all), android.R.drawable.ic_menu_sort_alphabetically, HomeCategoryFilter.ALL));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_car), R.drawable.ic_menu_category_car, HomeCategoryFilter.CAR));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_motorbike), R.drawable.ic_menu_category_motorbike, HomeCategoryFilter.MOTORBIKE));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_electric), R.drawable.ic_menu_category_electric, HomeCategoryFilter.ELECTRIC));
+        menuItems.add(new CategoryMenuItem(getString(R.string.category_accessories), android.R.drawable.ic_menu_manage, HomeCategoryFilter.ACCESSORIES));
 
         final androidx.appcompat.app.AlertDialog[] menuDialogRef = new androidx.appcompat.app.AlertDialog[1];
         for (CategoryMenuItem item : menuItems) {
@@ -314,7 +564,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             ivIcon.setImageResource(item.iconResId);
             tvTitle.setText(item.title);
             optionView.setOnClickListener(v -> {
-                showComingSoon(item.title);
+                setHomeCategoryFilter(item.categoryFilter);
                 if (menuDialogRef[0] != null) {
                     menuDialogRef[0].dismiss();
                 }
@@ -324,6 +574,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         }
 
         androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.home_filter_menu_title)
                 .setView(dialogView)
                 .create();
         menuDialogRef[0] = dialog;
@@ -333,10 +584,231 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private static class CategoryMenuItem {
         private final String title;
         private final int iconResId;
+        private final HomeCategoryFilter categoryFilter;
 
-        private CategoryMenuItem(String title, int iconResId) {
+        private CategoryMenuItem(String title, int iconResId, HomeCategoryFilter categoryFilter) {
             this.title = title;
             this.iconResId = iconResId;
+            this.categoryFilter = categoryFilter;
+        }
+    }
+
+    private void setHomeCategoryFilter(HomeCategoryFilter categoryFilter) {
+        selectedHomeCategory = categoryFilter;
+        applyHomeFilters();
+    }
+
+    private void clearSearchQuery() {
+        if (!TextUtils.isEmpty(homeSearchQuery)) {
+            homeSearchQuery = "";
+            syncSearchInputs();
+            applyHomeFilters();
+        }
+        finishHomeSearchInteraction(null);
+    }
+
+    private void attachSearchInputListeners() {
+        TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No-op.
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // No-op.
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (isSyncingSearchInputs) {
+                    return;
+                }
+
+                String latestQuery = editable == null ? "" : editable.toString();
+                if (TextUtils.equals(homeSearchQuery, latestQuery)) {
+                    return;
+                }
+
+                homeSearchQuery = latestQuery;
+                syncSearchInputs();
+                applyHomeFilters();
+            }
+        };
+
+        etHeroSearch.addTextChangedListener(watcher);
+        etMiniSearch.addTextChangedListener(watcher);
+
+        android.widget.TextView.OnEditorActionListener editorActionListener = (view, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                finishHomeSearchInteraction(view);
+                return true;
+            }
+            return false;
+        };
+        etHeroSearch.setOnEditorActionListener(editorActionListener);
+        etMiniSearch.setOnEditorActionListener(editorActionListener);
+    }
+
+    private void finishHomeSearchInteraction(View sourceView) {
+        etHeroSearch.clearFocus();
+        etMiniSearch.clearFocus();
+
+        View keyboardAnchor = sourceView != null ? sourceView : getCurrentFocus();
+        if (keyboardAnchor == null) {
+            keyboardAnchor = etHeroSearch;
+        }
+
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (inputMethodManager != null && keyboardAnchor.getWindowToken() != null) {
+            inputMethodManager.hideSoftInputFromWindow(keyboardAnchor.getWindowToken(), 0);
+        }
+    }
+
+    private void syncSearchInputs() {
+        isSyncingSearchInputs = true;
+        if (!TextUtils.equals(etHeroSearch.getText(), homeSearchQuery)) {
+            etHeroSearch.setText(homeSearchQuery);
+            etHeroSearch.setSelection(etHeroSearch.getText() == null ? 0 : etHeroSearch.getText().length());
+        }
+        if (!TextUtils.equals(etMiniSearch.getText(), homeSearchQuery)) {
+            etMiniSearch.setText(homeSearchQuery);
+            etMiniSearch.setSelection(etMiniSearch.getText() == null ? 0 : etMiniSearch.getText().length());
+        }
+        isSyncingSearchInputs = false;
+    }
+
+    private void applyHomeFilters() {
+        List<Listing> filteredListings = new ArrayList<>();
+        for (Listing listing : allActiveListings) {
+            if (matchesCategory(listing) && matchesSearch(listing)) {
+                filteredListings.add(listing);
+            }
+        }
+
+        updateHomeFilterUi();
+        updateListingUi(filteredListings);
+    }
+
+    private boolean matchesCategory(Listing listing) {
+        if (selectedHomeCategory == HomeCategoryFilter.ALL) {
+            return true;
+        }
+
+        String content = createSearchableText(listing);
+        switch (selectedHomeCategory) {
+            case CAR:
+                return content.contains("oto") || content.contains("o to") || content.contains("car") || content.contains("sedan") || content.contains("suv");
+            case MOTORBIKE:
+                return content.contains("xe may") || content.contains("xemay") || content.contains("motor") || content.contains("moto");
+            case ELECTRIC:
+                return content.contains("xe dien") || content.contains("xedien") || content.contains("electric") || content.contains("ev");
+            case ACCESSORIES:
+                return content.contains("phu kien") || content.contains("phu tung") || content.contains("accessor") || content.contains("part");
+            default:
+                return true;
+        }
+    }
+
+    private boolean matchesSearch(Listing listing) {
+        String normalizedQuery = normalize(homeSearchQuery);
+        if (TextUtils.isEmpty(normalizedQuery)) {
+            return true;
+        }
+        return createSearchableText(listing).contains(normalizedQuery);
+    }
+
+    private String createSearchableText(Listing listing) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(nonNull(listing.getDisplayTitle())).append(' ')
+                .append(nonNull(listing.getAddress())).append(' ')
+                .append(nonNull(listing.getDetail())).append(' ')
+                .append(nonNull(listing.getListingType())).append(' ')
+                .append(nonNull(listing.getUserName()));
+
+        Item item = listing.getItem();
+        if (item != null) {
+            builder.append(' ')
+                    .append(nonNull(item.getBrand())).append(' ')
+                    .append(nonNull(item.getModel())).append(' ')
+                    .append(nonNull(item.getItemTypeName()));
+        }
+        return normalize(builder.toString());
+    }
+
+    private String nonNull(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String normalize(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return "";
+        }
+
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .toLowerCase(Locale.ROOT)
+                .trim();
+        return normalized.replace('đ', 'd');
+    }
+
+    private void updateHomeFilterUi() {
+        syncSearchInputs();
+        boolean hasSearchQuery = !TextUtils.isEmpty(homeSearchQuery);
+        btnHeroClearSearch.setVisibility(hasSearchQuery ? View.VISIBLE : View.GONE);
+        btnMiniClearSearch.setVisibility(hasSearchQuery ? View.VISIBLE : View.GONE);
+
+        if (hasActiveHomeFilters()) {
+            if (!TextUtils.isEmpty(homeSearchQuery) && selectedHomeCategory != HomeCategoryFilter.ALL) {
+                tvFilterStatus.setText(getString(R.string.home_filter_result_with_both, getSelectedCategoryLabel(), homeSearchQuery));
+            } else if (!TextUtils.isEmpty(homeSearchQuery)) {
+                tvFilterStatus.setText(getString(R.string.home_filter_result_with_search, homeSearchQuery));
+            } else {
+                tvFilterStatus.setText(getString(R.string.home_filter_result_with_category, getSelectedCategoryLabel()));
+            }
+            tvFilterStatus.setVisibility(View.VISIBLE);
+        } else {
+            tvFilterStatus.setVisibility(View.GONE);
+        }
+
+        updateCategoryChipStyles();
+    }
+
+    private void updateCategoryChipStyles() {
+        styleCategoryChip(chipHomeAll, selectedHomeCategory == HomeCategoryFilter.ALL);
+        styleCategoryChip(chipHomeCar, selectedHomeCategory == HomeCategoryFilter.CAR);
+        styleCategoryChip(chipHomeMotorbike, selectedHomeCategory == HomeCategoryFilter.MOTORBIKE);
+        styleCategoryChip(chipHomeElectric, selectedHomeCategory == HomeCategoryFilter.ELECTRIC);
+        styleCategoryChip(chipHomeAccessories, selectedHomeCategory == HomeCategoryFilter.ACCESSORIES);
+    }
+
+    private void styleCategoryChip(TextView chip, boolean isSelected) {
+        if (chip == null) {
+            return;
+        }
+
+        chip.setBackgroundResource(isSelected ? R.drawable.bg_nav_active : R.drawable.bg_filter_chip);
+        chip.setTextColor(ContextCompat.getColor(this, isSelected ? R.color.primary_teal_dark : R.color.white));
+        chip.setTypeface(chip.getTypeface(), isSelected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        chip.setAlpha(isSelected ? 1f : 0.86f);
+    }
+
+    private boolean hasActiveHomeFilters() {
+        return selectedHomeCategory != HomeCategoryFilter.ALL || !TextUtils.isEmpty(homeSearchQuery);
+    }
+
+    private String getSelectedCategoryLabel() {
+        switch (selectedHomeCategory) {
+            case CAR:
+                return getString(R.string.category_car);
+            case MOTORBIKE:
+                return getString(R.string.category_motorbike);
+            case ELECTRIC:
+                return getString(R.string.category_electric);
+            case ACCESSORIES:
+                return getString(R.string.category_accessories);
+            default:
+                return getString(R.string.home_filter_all);
         }
     }
 
@@ -351,7 +823,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
         tvHeaderAvatar.setText(initials);
         tvMiniHeaderAvatar.setText(initials);
-        ivNavAccountIcon.setImageResource(isLoggedIn ? android.R.drawable.presence_online : android.R.drawable.ic_menu_myplaces);
+        ivNavAccountIcon.setImageResource(R.drawable.ic_profile_outline);
         ivNavAccountIcon.setColorFilter(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_muted));
         tvNavAccountLabel.setTextColor(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_secondary));
     }
@@ -398,17 +870,21 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                                 .filter(listing -> "Active".equalsIgnoreCase(listing.getStatus()))
                                 .collect(Collectors.toList());
 
-                        updateListingUi(activeListings);
+                        allActiveListings.clear();
+                        allActiveListings.addAll(activeListings);
+                        applyHomeFilters();
 
                         if (activeListings.isEmpty()) {
                             Toast.makeText(MainActivity.this, "Hiện không có bài đăng nào đang hoạt động", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        updateListingUi(new ArrayList<>());
+                        allActiveListings.clear();
+                        applyHomeFilters();
                         Toast.makeText(MainActivity.this, apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    updateListingUi(new ArrayList<>());
+                    allActiveListings.clear();
+                    applyHomeFilters();
                     Log.e(TAG, "Error: " + response.code());
                     Toast.makeText(MainActivity.this, "Không thể tải dữ liệu", Toast.LENGTH_SHORT).show();
                 }
@@ -417,21 +893,28 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             @Override
             public void onFailure(Call<ApiResponse<List<Listing>>> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
-                updateListingUi(new ArrayList<>());
+                allActiveListings.clear();
+                applyHomeFilters();
                 Log.e(TAG, "Failure: " + t.getMessage());
                 Toast.makeText(MainActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void updateListingUi(List<Listing> activeListings) {
-        adapter.setListings(activeListings);
+    private void updateListingUi(List<Listing> listings) {
+        adapter.setListings(listings);
         adapter.setFavoriteListingIds(cachedFavoriteListingIds);
-        tvListingCount.setText(getString(R.string.listing_count_format, activeListings.size()));
-        tvMiniListingCount.setText(getString(R.string.listing_count_format, activeListings.size()));
-        tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
+        tvListingCount.setText(getString(R.string.listing_count_format, listings.size()));
+        tvMiniListingCount.setText(getString(R.string.listing_count_format, listings.size()));
 
-        boolean isEmpty = activeListings.isEmpty();
+        if (!hasActiveHomeFilters()) {
+            tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
+        } else {
+            tvSectionSubtitle.setText(getString(R.string.featured_section_subtitle));
+        }
+
+        boolean isEmpty = listings.isEmpty();
+        tvEmptyState.setText(hasActiveHomeFilters() ? R.string.home_empty_filtered : R.string.empty_listings);
         tvEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         rvVehicles.setVisibility(isEmpty ? View.INVISIBLE : View.VISIBLE);
 
@@ -507,5 +990,48 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     @Override
     public void onOpenLoginRequested() {
         showLoginDialog();
+    }
+
+    private void setupGestureDetection() {
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getY() - e1.getY();
+                    
+                    // Swipe sensitivity check
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                // Swipe Right - go to previous
+                                onSwipeRight();
+                            } else {
+                                // Swipe Left - go to next
+                                onSwipeLeft();
+                            }
+                            return true;
+                        }
+                    }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+                return false;
+            }
+        });
+    }
+
+
+    private void onSwipeRight() {
+        // Swipe Right: Home(0) → back is no-op
+        // Do nothing on home screen
+    }
+
+    private void onSwipeLeft() {
+        // Swipe Left: Home(0) → Favorites(1)
+        if (currentNavItem == 0) {
+            selectNavItem(1);
+            openFavoritesScreen();
+        }
     }
 }

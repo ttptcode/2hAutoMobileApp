@@ -62,6 +62,13 @@ public class AuthSessionManager {
         sharedPreferences.edit().clear().apply();
     }
 
+    public void clearToken() {
+        sharedPreferences.edit()
+                .remove(KEY_AUTH_TOKEN)
+                .putBoolean(KEY_IS_LOGGED_IN, false)
+                .apply();
+    }
+
     public String getDisplayName() {
         String displayName = sharedPreferences.getString(KEY_FULL_NAME, "");
         if (TextUtils.isEmpty(displayName)) {

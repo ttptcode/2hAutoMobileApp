@@ -48,6 +48,7 @@
             android:layout_height="32dp"
             android:buttonTint="@color/favorite_tint"
             android:contentDescription="@string/favorite_add"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="@id/ivVehicle"
             app:layout_constraintTop_toTopOf="@id/ivVehicle" />
 
@@ -67,7 +68,7 @@
             tools:text="Đang mở bán" />
 
         <ImageButton
-            android:id="@+id/btnFavorite"
+            android:id="@+id/ivFavoriteBadge"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="@drawable/bg_favorite_button"
