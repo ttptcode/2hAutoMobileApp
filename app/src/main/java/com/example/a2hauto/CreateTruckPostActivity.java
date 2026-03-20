@@ -58,6 +58,9 @@ public class CreateTruckPostActivity extends AppCompatActivity {
     private TextInputEditText etCapacity, etLicensePlate, etMileage, etPrice, etTitle, etDescription, etAddress;
     private RadioGroup rgSellerType;
     private MaterialButton btnSubmit, btnSaveDraft;
+    
+    private boolean isEditMode = false;
+    private Listing editingListing = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +87,70 @@ public class CreateTruckPostActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
+
+        // Check if in edit mode
+        isEditMode = getIntent().getBooleanExtra("isEditMode", false);
+        if (isEditMode) {
+              editingListing = (Listing) getIntent().getSerializableExtra("listingData");
+            if (editingListing != null) {
+                findViewById(R.id.cardSelectCategory).setEnabled(false);
+                tvSelectedCategory.setAlpha(0.5f);
+                btnSaveDraft.setVisibility(android.view.View.GONE);
+                btnSubmit.setText("CẬP NHẬT");
+                loadExistingListingData(editingListing);
+            }
+        }
+    }
+
+    private void loadExistingListingData(Listing listing) {
+        if (listing == null || listing.getItem() == null) return;
+
+        com.example.a2hauto.model.Item item = listing.getItem();
+
+        // Load basic fields
+        if (item.getTitle() != null) etTitle.setText(item.getTitle());
+
+        // Load truck-specific fields
+        if (item.getBrand() != null) setSpinnerValue(spinnerBrand, item.getBrand());
+
+        String weight = getItemStringField(item, "getWeight");
+        if (weight != null) setSpinnerValue(spinnerPayload, weight);
+
+        String capacity = getItemStringField(item, "getCapacity");
+        if (capacity != null) etCapacity.setText(capacity);
+
+        if (item.getFuel() != null) setSpinnerValue(spinnerFuel, item.getFuel());
+        if (item.getLicensePlate() != null) etLicensePlate.setText(item.getLicensePlate());
+        if (item.getMileage() != null) etMileage.setText(item.getMileage());
+        if (item.getYear() != null) setSpinnerValue(spinnerYear, String.valueOf(item.getYear()));
+        if (item.getOrigin() != null) setSpinnerValue(spinnerOrigin, item.getOrigin());
+        if (item.getColor() != null) setSpinnerValue(spinnerColor, item.getColor());
+        if (item.getCondition() != null) setSpinnerValue(spinnerCondition, item.getCondition());
+
+        // Load price
+        if (listing.getBuyNowPrice() > 0) {
+            etPrice.setText(String.valueOf((long) listing.getBuyNowPrice()));
+        }
+
+        // Load description and address
+        if (listing.getDetail() != null) etDescription.setText(listing.getDetail());
+        if (listing.getAddress() != null) etAddress.setText(listing.getAddress());
+    }
+
+    private void setSpinnerValue(AutoCompleteTextView spinner, String value) {
+        if (value != null) {
+            spinner.setText(value, false);
+        }
+    }
+
+    private String getItemStringField(com.example.a2hauto.model.Item item, String getterName) {
+        try {
+            java.lang.reflect.Method method = item.getClass().getMethod(getterName);
+            Object value = method.invoke(item);
+            return value != null ? String.valueOf(value) : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void initViews() {
@@ -231,7 +298,7 @@ public class CreateTruckPostActivity extends AppCompatActivity {
         // Debug authentication status
         AuthDebugger.debugAuthStatus(this);
 
-        if (selectedImageUris.isEmpty()) {
+        if (!isEditMode && selectedImageUris.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn ít nhất 1 hình ảnh", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -250,6 +317,17 @@ public class CreateTruckPostActivity extends AppCompatActivity {
         Map<String, RequestBody> fields = new HashMap<>();
         String itemTypeId = getIntent().getStringExtra("itemTypeId");
         fields.put("ItemTypeId", createPartFromString(itemTypeId != null ? itemTypeId : "805bc39a-6a16-4faf-bca8-2204395eae8f"));
+
+        // Add IDs for edit mode
+        if (isEditMode && editingListing != null) {
+            if (editingListing.getListingId() != null) {
+                fields.put("ListingId", createPartFromString(editingListing.getListingId()));
+            }
+            if (editingListing.getItem() != null && editingListing.getItem().getItemId() != null) {
+                fields.put("ItemId", createPartFromString(editingListing.getItem().getItemId()));
+            }
+        }
+
         fields.put("SerialNumber", createPartFromString("TRUCK_" + System.currentTimeMillis()));
         
         String titleValue = etTitle.getText().toString().trim();
@@ -307,7 +385,7 @@ public class CreateTruckPostActivity extends AppCompatActivity {
             if (part != null) imageParts.add(part);
         }
 
-        if (imageParts.isEmpty()) {
+        if (!isEditMode && imageParts.isEmpty()) {
             resetButtons();
             Toast.makeText(this, "Lỗi xử lý hình ảnh", Toast.LENGTH_SHORT).show();
             return;
@@ -318,28 +396,48 @@ public class CreateTruckPostActivity extends AppCompatActivity {
             videoPart = prepareFilePart("Video", selectedVideoUri);
         }
 
-        apiService.createListing(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    String listingId = response.body().getData().getListingId();
-                    if (isDraft) {
-                        finishSuccess("Đã lưu bản nháp thành công!");
+        if (isEditMode) {
+            apiService.updateListingWithItemWithFiles(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        finishSuccess("Cập nhật bài đăng thành công!");
                     } else {
-                        activateListing(listingId);
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateTruckPostActivity.this, response);
                     }
-                } else {
-                    resetButtons();
-                    ErrorHandler.handleErrorResponse(CreateTruckPostActivity.this, response);
                 }
-            }
 
-            @Override
-            public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
-                resetButtons();
-                ErrorHandler.handleNetworkError(CreateTruckPostActivity.this, t);
-            }
-        });
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreateTruckPostActivity.this, t);
+                }
+            });
+        } else {
+            apiService.createListing(fields, imageParts, videoPart).enqueue(new Callback<ApiResponse<Listing>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Listing>> call, Response<ApiResponse<Listing>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String listingId = response.body().getData().getListingId();
+                        if (isDraft) {
+                            finishSuccess("Đã lưu bản nháp thành công!");
+                        } else {
+                            activateListing(listingId);
+                        }
+                    } else {
+                        resetButtons();
+                        ErrorHandler.handleErrorResponse(CreateTruckPostActivity.this, response);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Listing>> call, Throwable t) {
+                    resetButtons();
+                    ErrorHandler.handleNetworkError(CreateTruckPostActivity.this, t);
+                }
+            });
+        }
     }
 
     private void activateListing(String listingId) {

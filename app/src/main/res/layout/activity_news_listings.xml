@@ -19,7 +19,7 @@
         app:title="@string/news_title"
         app:titleTextColor="@color/text_primary" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
@@ -98,6 +98,16 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCreatePostMain"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/news_action_create_post"
+                app:cornerRadius="12dp"
+                app:icon="@android:drawable/ic_input_add" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -244,59 +254,77 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <LinearLayout
+                    <HorizontalScrollView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:paddingStart="10dp"
-                        android:paddingTop="10dp"
-                        android:paddingEnd="10dp">
+                        android:scrollbars="none">
 
-                        <TextView
-                            android:id="@+id/tvTabShowing"
-                            android:layout_width="0dp"
+                        <LinearLayout
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="6dp"
-                            android:paddingBottom="8dp"
-                            android:textColor="@color/primary_teal_dark"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:orientation="horizontal"
+                            android:paddingStart="10dp"
+                            android:paddingTop="10dp"
+                            android:paddingEnd="10dp">
 
-                        <TextView
-                            android:id="@+id/tvTabExpired"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="6dp"
-                            android:paddingBottom="8dp"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            <TextView
+                                android:id="@+id/tvTabShowing"
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground"
+                                android:gravity="center"
+                                android:paddingTop="6dp"
+                                android:paddingBottom="8dp"
+                                android:textColor="@color/primary_teal_dark"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
 
-                        <TextView
-                            android:id="@+id/tvTabDraft"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="6dp"
-                            android:paddingBottom="8dp"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                            <TextView
+                                android:id="@+id/tvTabExpired"
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground"
+                                android:gravity="center"
+                                android:paddingTop="6dp"
+                                android:paddingBottom="8dp"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvTabDraft"
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground"
+                                android:gravity="center"
+                                android:paddingTop="6dp"
+                                android:paddingBottom="8dp"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvTabHidden"
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground"
+                                android:gravity="center"
+                                android:paddingTop="6dp"
+                                android:paddingBottom="8dp"
+                                android:text="ĐÃ ẨN (0)"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </HorizontalScrollView>
 
                     <View
                         android:layout_width="match_parent"
@@ -315,10 +343,8 @@
                         android:id="@+id/rvConversations"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"
                         android:paddingBottom="8dp"
-                        android:visibility="gone"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                        android:visibility="gone" />
 
                     <LinearLayout
                         android:id="@+id/layoutEmptyState"
@@ -373,5 +399,5 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

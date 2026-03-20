@@ -4,7 +4,10 @@ import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +29,8 @@ import com.google.android.material.textfield.TextInputLayout;
 
 public class RegisterDialogFragment extends DialogFragment {
 
+    private static final long REGISTER_TIMEOUT_MS = 20_000L;
+
     public interface RegisterDialogListener {
         void onRegisterSuccess(String displayName);
 
@@ -46,6 +51,8 @@ public class RegisterDialogFragment extends DialogFragment {
     private View contentView;
     private ImageButton btnClose;
     private TextView tvOpenLogin;
+    private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private Runnable registerTimeoutRunnable;
 
     @NonNull
     @Override
@@ -162,36 +169,51 @@ public class RegisterDialogFragment extends DialogFragment {
         }
 
         setLoading(true);
+        startRegisterTimeoutWatchdog();
         authRepository.register(fullName, phone, password, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(String token, String message) {
                 if (!isAdded()) {
+                    stopRegisterTimeoutWatchdog();
                     return;
                 }
 
-                String displayName = fullName.trim();
-                authSessionManager.savePendingRegistration(displayName, phone);
-                Toast.makeText(requireContext(), getString(R.string.register_success, displayName), Toast.LENGTH_SHORT).show();
-                if (getActivity() instanceof RegisterDialogListener) {
-                    ((RegisterDialogListener) getActivity()).onRegisterSuccess(displayName);
-                }
-                dismissAllowingStateLoss();
+                stopRegisterTimeoutWatchdog();
+                try {
+                    String displayName = fullName.trim();
+                    authSessionManager.savePendingRegistration(displayName, phone);
+                    Toast.makeText(requireContext(), getString(R.string.register_success, displayName), Toast.LENGTH_SHORT).show();
+                    if (getActivity() instanceof RegisterDialogListener) {
+                        ((RegisterDialogListener) getActivity()).onRegisterSuccess(displayName);
+                    }
+                    setLoading(false);
+                    dismissAllowingStateLoss();
 
-                if (getActivity() instanceof RegisterDialogListener) {
-                    etPhone.post(() -> {
-                        if (getActivity() instanceof RegisterDialogListener) {
-                            ((RegisterDialogListener) getActivity()).onOpenLoginRequested();
-                        }
-                    });
+                    if (getActivity() instanceof RegisterDialogListener) {
+                        etPhone.post(() -> {
+                            if (getActivity() instanceof RegisterDialogListener) {
+                                ((RegisterDialogListener) getActivity()).onOpenLoginRequested();
+                            }
+                        });
+                    }
+                } catch (Exception exception) {
+                    setLoading(false);
+                    String safeMessage = TextUtils.isEmpty(exception.getMessage())
+                            ? getString(R.string.auth_unknown_error)
+                            : exception.getMessage();
+                    tilPhone.setError(safeMessage);
+                    Toast.makeText(requireContext(), safeMessage, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onError(String message) {
                 if (!isAdded()) {
+                    stopRegisterTimeoutWatchdog();
                     return;
                 }
 
+                stopRegisterTimeoutWatchdog();
                 setLoading(false);
                 tilPhone.setError(message);
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
@@ -224,6 +246,33 @@ public class RegisterDialogFragment extends DialogFragment {
         if (dialog != null) {
             dialog.setCancelable(!isLoading);
             dialog.setCanceledOnTouchOutside(!isLoading);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        stopRegisterTimeoutWatchdog();
+        super.onDestroyView();
+    }
+
+    private void startRegisterTimeoutWatchdog() {
+        stopRegisterTimeoutWatchdog();
+        registerTimeoutRunnable = () -> {
+            if (!isAdded()) {
+                return;
+            }
+            setLoading(false);
+            String timeoutMessage = getString(R.string.auth_network_error);
+            tilPhone.setError(timeoutMessage);
+            Toast.makeText(requireContext(), timeoutMessage, Toast.LENGTH_SHORT).show();
+        };
+        timeoutHandler.postDelayed(registerTimeoutRunnable, REGISTER_TIMEOUT_MS);
+    }
+
+    private void stopRegisterTimeoutWatchdog() {
+        if (registerTimeoutRunnable != null) {
+            timeoutHandler.removeCallbacks(registerTimeoutRunnable);
+            registerTimeoutRunnable = null;
         }
     }
 
