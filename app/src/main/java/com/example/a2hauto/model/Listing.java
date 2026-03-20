@@ -26,6 +26,8 @@ public class Listing implements Serializable {
     private String detail;
     @SerializedName("createdAt")
     private String createdAt;
+    @SerializedName("endDate")
+    private String endDate;
 
     public String getListingId() { return listingId; }
     public String getListingType() { return listingType; }
@@ -38,9 +40,13 @@ public class Listing implements Serializable {
     public String getAddress() { return address; }
     public String getDetail() { return detail; }
     public String getCreatedAt() { return createdAt; }
+    public String getEndDate() { return endDate; }
     
     public String getDisplayTitle() {
         if (itemTitle != null && !itemTitle.isEmpty()) return itemTitle;
+        if (item != null && item.getTitle() != null && !item.getTitle().isEmpty()) {
+            return item.getTitle();
+        }
         if (item != null) return item.getDisplayName();
         return "Không có tiêu đề";
     }

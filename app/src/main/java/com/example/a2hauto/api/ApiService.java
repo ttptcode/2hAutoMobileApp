@@ -2,9 +2,14 @@ package com.example.a2hauto.api;
 
 import com.example.a2hauto.model.auth.LoginRequest;
 import com.example.a2hauto.model.auth.RegisterRequest;
+import com.example.a2hauto.model.FeeCommission;
+import com.example.a2hauto.model.FeeCommissionResponse;
 import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
+import com.example.a2hauto.model.UserPackage;
 import com.example.a2hauto.model.UserProfileResponse;
+import com.example.a2hauto.model.PaymentRequest;
+import com.example.a2hauto.model.PaymentResponse;
 import com.google.gson.JsonElement;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.CreateReviewRequest;
@@ -15,11 +20,13 @@ import java.util.Map;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.Multipart;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
@@ -29,6 +36,31 @@ import retrofit2.http.Body;
 public interface ApiService {
     @GET("api/Listings")
     Call<ApiResponse<List<Listing>>> getListings();
+
+    @GET("api/Listings/by-user/{userId}")
+    Call<ApiResponse<List<Listing>>> getListingsByUser(
+            @Header("Authorization") String authorization,
+            @Path("userId") String userId
+    );
+
+    @GET("api/Listings/{listingId}")
+    Call<ApiResponse<Listing>> getListingById(
+            @Header("Authorization") String authorization,
+            @Path("listingId") String listingId
+    );
+
+    @Multipart
+    @PUT("api/Listings/with-item")
+    Call<ApiResponse<Listing>> updateListingWithItem(
+            @Header("Authorization") String authorization,
+            @PartMap Map<String, RequestBody> fields
+    );
+
+    @DELETE("api/Listings/{listingId}")
+    Call<ApiResponse<Void>> deleteListing(
+            @Header("Authorization") String authorization,
+            @Path("listingId") String listingId
+    );
 
     @GET("api/Conversations/{userId}")
     Call<ApiResponse<List<JsonElement>>> getConversations(
@@ -74,6 +106,20 @@ public interface ApiService {
     @POST("api/Favorites/toggle")
     Call<ApiResponse<JsonElement>> toggleFavorite(@Body ToggleFavoriteRequest request);
 
+        @GET("api/UserPackages")
+        Call<ApiResponse<List<FeeCommission>>> getUserPackages();
+
+        @GET("api/FeeCommissions")
+        Call<FeeCommissionResponse> getPackages();
+
+        @GET("api/UserPackages/active")
+        Call<ApiResponse<List<UserPackage>>> getActiveUserPackages();
+
     @GET("api/Users/{id}")
     Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
+
+    @POST("api/VNpay/create-payment")
+    Call<ApiResponse<PaymentResponse>> createPayment(
+            @Body PaymentRequest request
+    );
 }
