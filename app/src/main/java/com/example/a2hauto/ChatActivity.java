@@ -1,13 +1,11 @@
 package com.example.a2hauto;
 
-import android.content.Intent;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -42,16 +40,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.FrameLayout;
-import androidx.core.content.ContextCompat;
-
 public class ChatActivity extends AppCompatActivity {
 
     private static final long POLLING_INTERVAL_MS = 7000L;
-    private static final int SWIPE_THRESHOLD = 100;
-    private static final int SWIPE_VELOCITY_THRESHOLD = 100;
     public static final String EXTRA_OPEN_CONVERSATION_ID = "extra_open_conversation_id";
     public static final String EXTRA_OPEN_CONVERSATION_JSON = "extra_open_conversation_json";
 
@@ -82,13 +73,6 @@ public class ChatActivity extends AppCompatActivity {
     private final Map<String, String> draftByConversationId = new HashMap<>();
     private final Map<String, ArrayList<Uri>> mediaDraftByConversationId = new HashMap<>();
     private final Set<String> unreadConversationIds = new HashSet<>();
-    
-    private GestureDetector gestureDetector;
-    private int currentNavItem = 3; // Chat position
-    private int previousNavItem = 2; // Track previous position
-    
-    // Navbar items
-    private LinearLayout navHome, navFavorites, navPost, navChat, navAccount;
 
     private final android.os.Handler pollingHandler = new android.os.Handler();
     private final Runnable pollingRunnable = new Runnable() {
@@ -126,8 +110,6 @@ public class ChatActivity extends AppCompatActivity {
         setupRecyclerViews();
         setupActions();
         setupBackHandling();
-        setupGestureDetection();
-        setupBottomNavigation();
 
         showListScreen();
         tryOpenSeedConversation();
@@ -565,11 +547,6 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        // Handle gesture detection for swipe
-        if (gestureDetector != null) {
-            gestureDetector.onTouchEvent(ev);
-        }
-        
         if (ev.getAction() == MotionEvent.ACTION_DOWN
                 && etChatMessage != null
                 && etChatMessage.hasFocus()) {
@@ -580,200 +557,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         }
         return super.dispatchTouchEvent(ev);
-    }
-
-    private void setupBottomNavigation() {
-        // Get references to all nav items
-        navHome = findViewById(R.id.navHome);
-        navFavorites = findViewById(R.id.navFavorites);
-        navPost = findViewById(R.id.navPost);
-        navChat = findViewById(R.id.navChat);
-        navAccount = findViewById(R.id.navAccount);
-
-        // Set up navigation click listeners
-        navHome.setOnClickListener(v -> {
-            selectNavItem(0);
-            startActivity(new Intent(this, MainActivity.class));
-            finish();
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
-        });
-        
-        navFavorites.setOnClickListener(v -> {
-            selectNavItem(1);
-            startActivity(new Intent(this, FavoritesActivity.class));
-            finish();
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
-        });
-        
-        navPost.setOnClickListener(v -> {
-            selectNavItem(2);
-            startActivity(new Intent(this, NewsListingsActivity.class));
-            finish();
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
-        });
-    
-        navChat.setOnClickListener(v -> {
-            // Already on chat screen
-            selectNavItem(3);
-        });
-        
-        navAccount.setOnClickListener(v -> {
-            selectNavItem(4);
-            Toast.makeText(this, "Account page coming soon", Toast.LENGTH_SHORT).show();
-        });
-        
-        // Set initial highlight to Chat
-        selectNavItem(3);
-    }
-
-    private void selectNavItem(int navIndex) {
-        // Remove highlight from all items
-        resetAllNavItems();
-        
-        // Highlight selected item
-        currentNavItem = navIndex;
-        LinearLayout selectedNav = null;
-        
-        switch (navIndex) {
-            case 0:
-                selectedNav = navHome;
-                break;
-            case 1:
-                selectedNav = navFavorites;
-                break;
-            case 2:
-                selectedNav = navPost;
-                break;
-            case 3:
-                selectedNav = navChat;
-                break;
-            case 4:
-                selectedNav = navAccount;
-                break;
-        }
-        
-        if (selectedNav != null) {
-            highlightNavItem(selectedNav);
-        }
-    }
-
-    private void resetAllNavItems() {
-        if (navHome != null) unhighlightNavItem(navHome);
-        if (navFavorites != null) unhighlightNavItem(navFavorites);
-        if (navPost != null) unhighlightNavItem(navPost);
-        if (navChat != null) unhighlightNavItem(navChat);
-        if (navAccount != null) unhighlightNavItem(navAccount);
-    }
-
-    private void highlightNavItem(LinearLayout navItem) {
-        // Add scale animation for transition
-        navItem.animate()
-                .scaleX(1.05f)
-                .scaleY(1.05f)
-                .setDuration(200)
-                .start();
-        
-        // Set background and update colors
-        navItem.setBackgroundResource(R.drawable.bg_nav_active);
-        
-        // Update icon and text color for highlighted state
-        for (int i = 0; i < navItem.getChildCount(); i++) {
-            android.view.View child = navItem.getChildAt(i);
-            if (child instanceof ImageView) {
-                ((ImageView) child).setColorFilter(ContextCompat.getColor(this, R.color.primary_teal_dark), android.graphics.PorterDuff.Mode.SRC_IN);
-            } else if (child instanceof TextView) {
-                ((TextView) child).setTextColor(ContextCompat.getColor(this, R.color.primary_teal_dark));
-                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.BOLD);
-            } else if (child instanceof FrameLayout) {
-                // Handle FrameLayout (which contains the badge)
-                for (int j = 0; j < ((FrameLayout) child).getChildCount(); j++) {
-                    android.view.View grandChild = ((FrameLayout) child).getChildAt(j);
-                    if (grandChild instanceof ImageView) {
-                        ((ImageView) grandChild).setColorFilter(ContextCompat.getColor(this, R.color.primary_teal_dark), android.graphics.PorterDuff.Mode.SRC_IN);
-                    }
-                }
-            }
-        }
-    }
-
-    private void unhighlightNavItem(LinearLayout navItem) {
-        // Reset scale animation
-        navItem.animate()
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(200)
-                .start();
-        
-        // Remove background
-        navItem.setBackground(null);
-        
-        // Reset icon and text color for unhighlighted state
-        for (int i = 0; i < navItem.getChildCount(); i++) {
-            android.view.View child = navItem.getChildAt(i);
-            if (child instanceof ImageView) {
-                ((ImageView) child).setColorFilter(ContextCompat.getColor(this, R.color.text_muted), android.graphics.PorterDuff.Mode.SRC_IN);
-            } else if (child instanceof TextView) {
-                ((TextView) child).setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
-                ((TextView) child).setTypeface(((TextView) child).getTypeface(), android.graphics.Typeface.NORMAL);
-            } else if (child instanceof FrameLayout) {
-                // Handle FrameLayout (which contains the badge)
-                for (int j = 0; j < ((FrameLayout) child).getChildCount(); j++) {
-                    android.view.View grandChild = ((FrameLayout) child).getChildAt(j);
-                    if (grandChild instanceof ImageView) {
-                        ((ImageView) grandChild).setColorFilter(ContextCompat.getColor(this, R.color.text_muted), android.graphics.PorterDuff.Mode.SRC_IN);
-                    }
-                }
-            }
-        }
-    }
-
-    private void setupGestureDetection() {
-        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                try {
-                    float diffX = e2.getX() - e1.getX();
-                    float diffY = e2.getY() - e1.getY();
-                    
-                    if (Math.abs(diffX) > Math.abs(diffY)) {
-                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-                            if (diffX > 0) {
-                                // Swipe Right: Chat(3) → Post(2)
-                                onSwipeRight();
-                            } else {
-                                // Swipe Left: Chat(3) → Account(4)
-                                onSwipeLeft();
-                            }
-                            return true;
-                        }
-                    }
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                }
-                return false;
-            }
-        });
-    }
-
-    private void onSwipeRight() {
-        // Swipe Right: Chat(3) → Post(2)
-        previousNavItem = currentNavItem;
-        currentNavItem = 2;
-        startActivity(new Intent(this, NewsListingsActivity.class));
-        finish();
-        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
-    }
-
-    private void onSwipeLeft() {
-        // Swipe Left: Chat(3) → Account(4)
-        // Account page doesn't exist yet, so navigate to home for now
-        previousNavItem = currentNavItem;
-        currentNavItem = 4;
-        Toast.makeText(this, "Account page coming soon", Toast.LENGTH_SHORT).show();
-        // Commented out until Account page is implemented:
-        // startActivity(new Intent(this, AccountActivity.class));
-        // finish();
-        // overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
 }

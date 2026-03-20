@@ -808,16 +808,28 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         boolean isLoggedIn = authSessionManager.isLoggedIn();
         String initials = getAvatarInitials(authSessionManager.getDisplayName(), authSessionManager.getPhoneNumber());
 
-        btnHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
-        btnMiniHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
-        tvHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
-        tvMiniHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
-
-        tvHeaderAvatar.setText(initials);
-        tvMiniHeaderAvatar.setText(initials);
-        ivNavAccountIcon.setImageResource(R.drawable.ic_profile_outline);
-        ivNavAccountIcon.setColorFilter(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_muted));
-        tvNavAccountLabel.setTextColor(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_secondary));
+        if (btnHeaderLogin != null) {
+            btnHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        }
+        if (btnMiniHeaderLogin != null) {
+            btnMiniHeaderLogin.setVisibility(isLoggedIn ? View.GONE : View.VISIBLE);
+        }
+        if (tvHeaderAvatar != null) {
+            tvHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
+            tvHeaderAvatar.setText(initials);
+        }
+        if (tvMiniHeaderAvatar != null) {
+            tvMiniHeaderAvatar.setVisibility(isLoggedIn ? View.VISIBLE : View.GONE);
+            tvMiniHeaderAvatar.setText(initials);
+        }
+        
+        if (ivNavAccountIcon != null) {
+            ivNavAccountIcon.setImageResource(R.drawable.ic_profile_outline);
+            ivNavAccountIcon.setColorFilter(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_muted));
+        }
+        if (tvNavAccountLabel != null) {
+            tvNavAccountLabel.setTextColor(ContextCompat.getColor(this, isLoggedIn ? R.color.success_green : R.color.text_secondary));
+        }
     }
 
     private String getAvatarInitials(String displayName, String phoneNumber) {
