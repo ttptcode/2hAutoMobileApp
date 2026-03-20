@@ -75,6 +75,20 @@
             android:name=".PlanActivity"
             android:exported="false"
             android:label="Chọn gói dịch vụ" />
+        <activity
+            android:name=".PaymentActivity"
+            android:exported="true"
+            android:label="Thanh toán VNPay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Custom scheme for payment callback -->
+                <data
+                    android:scheme="yourapp"
+                    android:host="payment-callback" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

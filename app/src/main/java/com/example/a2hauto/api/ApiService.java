@@ -8,6 +8,8 @@ import com.example.a2hauto.model.FavoriteItem;
 import com.example.a2hauto.model.ToggleFavoriteRequest;
 import com.example.a2hauto.model.UserPackage;
 import com.example.a2hauto.model.UserProfileResponse;
+import com.example.a2hauto.model.PaymentRequest;
+import com.example.a2hauto.model.PaymentResponse;
 import com.google.gson.JsonElement;
 import com.example.a2hauto.model.ApiResponse;
 import com.example.a2hauto.model.CreateReviewRequest;
@@ -105,14 +107,19 @@ public interface ApiService {
     Call<ApiResponse<JsonElement>> toggleFavorite(@Body ToggleFavoriteRequest request);
 
         @GET("api/UserPackages")
-        Call<ApiResponse<List<FeeCommission>>> getUserPackages(@Header("Authorization") String token);
+        Call<ApiResponse<List<FeeCommission>>> getUserPackages();
 
         @GET("api/FeeCommissions")
-        Call<FeeCommissionResponse> getPackages(@Header("Authorization") String token);
+        Call<FeeCommissionResponse> getPackages();
 
         @GET("api/UserPackages/active")
-        Call<ApiResponse<List<UserPackage>>> getActiveUserPackages(@Header("Authorization") String token);
+        Call<ApiResponse<List<UserPackage>>> getActiveUserPackages();
 
     @GET("api/Users/{id}")
     Call<UserProfileResponse> getUserProfile(@Path("id") String userId);
+
+    @POST("api/VNpay/create-payment")
+    Call<ApiResponse<PaymentResponse>> createPayment(
+            @Body PaymentRequest request
+    );
 }

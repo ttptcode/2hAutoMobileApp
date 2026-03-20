@@ -203,6 +203,12 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        // Handle gesture detection for swipe
+        if (gestureDetector != null) {
+            gestureDetector.onTouchEvent(ev);
+        }
+
+        // Handle search input focus
         if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
             View focusedView = getCurrentFocus();
             boolean focusedSearchInput = focusedView == etHeroSearch || focusedView == etMiniSearch;
@@ -213,6 +219,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                 }
             }
         }
+        
         return super.dispatchTouchEvent(ev);
     }
 
@@ -937,13 +944,6 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
         });
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        if (gestureDetector != null) {
-            gestureDetector.onTouchEvent(event);
-        }
-        return super.dispatchTouchEvent(event);
-    }
 
     private void onSwipeRight() {
         // Swipe Right: Home(0) → back is no-op

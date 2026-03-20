@@ -72,8 +72,9 @@ public final class PackageSelectionBottomSheet {
             return;
         }
 
-        ApiService apiService = ApiClient.getApiService();
-        apiService.getActiveUserPackages("Bearer " + token).enqueue(new Callback<ApiResponse<List<UserPackage>>>() {
+        // Use ApiClient.getApiService(context) to get interceptor with token injection
+        ApiService apiService = ApiClient.getApiService(context);
+        apiService.getActiveUserPackages().enqueue(new Callback<ApiResponse<List<UserPackage>>>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse<List<UserPackage>>> call,
                                    @NonNull Response<ApiResponse<List<UserPackage>>> response) {
