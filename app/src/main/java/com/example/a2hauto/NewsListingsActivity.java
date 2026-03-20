@@ -95,8 +95,7 @@ public class NewsListingsActivity extends AppCompatActivity implements NewsListi
     private GestureDetector gestureDetector;
     private static final int SWIPE_THRESHOLD = 100;
     private static final int SWIPE_VELOCITY_THRESHOLD = 100;
-    private final List<JsonElement> allConversations = new ArrayList<>();
-    private NewsTab selectedTab = NewsTab.SHOWING;
+    
     private final List<Listing> allListings = new ArrayList<>();
     private final List<Listing> activeListings = new ArrayList<>();
     private final List<Listing> expiredListings = new ArrayList<>();
@@ -306,38 +305,8 @@ public class NewsListingsActivity extends AppCompatActivity implements NewsListi
 
     private void setCategoryFilter(CategoryFilter categoryFilter) {
         selectedCategory = categoryFilter;
-        updateFilterChipStyles();
-        applyFilters();
-        chipAll.setOnClickListener(view -> {
-            selectedCategory = CategoryFilter.ALL;
-            updateCategoryChipStyles();
-            renderSelectedTab();
-        });
-        chipCar.setOnClickListener(view -> {
-            selectedCategory = CategoryFilter.CAR;
-            updateCategoryChipStyles();
-            renderSelectedTab();
-        });
-        chipMotorbike.setOnClickListener(view -> {
-            selectedCategory = CategoryFilter.MOTORBIKE;
-            updateCategoryChipStyles();
-            renderSelectedTab();
-        });
-        chipBicycle.setOnClickListener(view -> {
-            selectedCategory = CategoryFilter.BICYCLE;
-            updateCategoryChipStyles();
-            renderSelectedTab();
-        });
-        chipElectric.setOnClickListener(view -> {
-            selectedCategory = CategoryFilter.ELECTRIC;
-            updateCategoryChipStyles();
-            renderSelectedTab();
-        });
-        chipParts.setOnClickListener(view -> {
-            selectedCategory = CategoryFilter.PARTS;
-            updateCategoryChipStyles();
-            renderSelectedTab();
-        });
+        updateCategoryChipStyles();
+        renderSelectedTab();
     }
 
     private void fetchListings() {

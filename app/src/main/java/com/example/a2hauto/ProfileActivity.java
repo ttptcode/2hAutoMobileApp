@@ -95,7 +95,7 @@ public class ProfileActivity extends AppCompatActivity {
         tvExpirationDate = findViewById(R.id.tvExpirationDate);
 
         authSessionManager = new AuthSessionManager(this);
-        apiService = ApiClient.getApiService();
+        apiService = ApiClient.getApiService(this);
 
         // Fill basic values first for better perceived loading.
         String fallbackName = authSessionManager.getDisplayName();
@@ -354,7 +354,8 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
-        apiService.getActiveUserPackages("Bearer " + token).enqueue(new Callback<ApiResponse<List<UserPackage>>>() {
+        // AuthInterceptor sẽ tự động thêm token vào header
+        apiService.getActiveUserPackages().enqueue(new Callback<ApiResponse<List<UserPackage>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<UserPackage>>> call, Response<ApiResponse<List<UserPackage>>> response) {
                 if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
