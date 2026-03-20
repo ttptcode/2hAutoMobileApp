@@ -12,8 +12,6 @@ public class Listing implements Serializable {
     private String listingType;
     @SerializedName("buyNowPrice")
     private double buyNowPrice;
-    @SerializedName("userId")
-    private String userId;
     @SerializedName("userName")
     private String userName;
     @SerializedName("itemTitle")
@@ -35,7 +33,6 @@ public class Listing implements Serializable {
     public String getUserId() { return userId; }
     public String getListingType() { return listingType; }
     public double getBuyNowPrice() { return buyNowPrice; }
-    public String getUserId() { return userId; }
     public String getUserName() { return userName; }
     public String getItemTitle() { return itemTitle; }
     public String getStatus() { return status; }

@@ -117,8 +117,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
             unreadHandler.postDelayed(this, UNREAD_POLLING_INTERVAL_MS);
         }
     };
-    private final Set<String> cachedFavoriteListingIds = new HashSet<>();
-    
+
     // Gesture detection
     private GestureDetector gestureDetector;
     private static final int SWIPE_THRESHOLD = 100;
@@ -344,39 +343,32 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     }
 
     private void setupBottomNavigation() {
-        // Inflate the bottom navigation bar layout
-        View navView = getLayoutInflater().inflate(R.layout.bottom_navigation_bar, bottomNavContainer, true);
+        // Get references to all nav items from activity_main.xml
+        navHome = findViewById(R.id.navHome);
+        navFavorites = findViewById(R.id.navFavorites);
+        navPost = findViewById(R.id.navPost);
+        navChat = findViewById(R.id.navChat);
+        navAccount = findViewById(R.id.navAccount);
 
-        // Initialize nav account icon and label from inflated view
-        ivNavAccountIcon = navView.findViewById(R.id.ivNavAccountIcon);
-        tvNavAccountLabel = navView.findViewById(R.id.tvNavAccountLabel);
-
-        // Get references to all nav items
-        navHome = navView.findViewById(R.id.navHome);
-        navFavorites = navView.findViewById(R.id.navFavorites);
-        navPost = navView.findViewById(R.id.navPost);
-        navChat = navView.findViewById(R.id.navChat);
-        navAccount = navView.findViewById(R.id.navAccount);
-
-            // Set up navigation click listeners with highlight
-            navHome.setOnClickListener(v -> {
-                selectNavItem(0);
-                rvVehicles.smoothScrollToPosition(0);
-            });
-            
-            navFavorites.setOnClickListener(v -> {
-                selectNavItem(1);
-                openFavoritesScreen();
-            });
-            
-            navPost.setOnClickListener(v -> {
-                selectNavItem(2);
-                handlePostAction();
-            });
+        // Set up navigation click listeners with highlight
+        navHome.setOnClickListener(v -> {
+            selectNavItem(0);
+            rvVehicles.smoothScrollToPosition(0);
+        });
         
+        navFavorites.setOnClickListener(v -> {
+            selectNavItem(1);
+            openFavoritesScreen();
+        });
+        
+        navPost.setOnClickListener(v -> {
+            selectNavItem(2);
+            handlePostAction();
+        });
+    
         navChat.setOnClickListener(v -> {
             selectNavItem(3);
-            showComingSoon(getString(R.string.nav_chat));
+            openChatScreen();
         });
         
         navAccount.setOnClickListener(v -> {
@@ -858,24 +850,45 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
     private void fetchListings() {
         progressBar.setVisibility(View.VISIBLE);
         tvEmptyState.setVisibility(View.GONE);
+        Log.d(TAG, "fetchListings: Starting fetch");
         apiService.getListings().enqueue(new Callback<ApiResponse<List<Listing>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Listing>>> call, Response<ApiResponse<List<Listing>>> response) {
                 progressBar.setVisibility(View.GONE);
+                Log.d(TAG, "onResponse: response code = " + response.code());
+                
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<List<Listing>> apiResponse = response.body();
+                    Log.d(TAG, "onResponse: isSuccess = " + apiResponse.isSuccess());
+                    
                     if (apiResponse.isSuccess() && apiResponse.getData() != null) {
+                        List<Listing> allListings = apiResponse.getData();
+                        Log.d(TAG, "onResponse: Total listings = " + allListings.size());
+                        
+                        // Log listing statuses
+                        for (int i = 0; i < Math.min(3, allListings.size()); i++) {
+                            Log.d(TAG, "onResponse: Listing " + i + " status = " + allListings.get(i).getStatus());
+                        }
+                        
                         // Filter listings with status "Active"
-                        List<Listing> activeListings = apiResponse.getData().stream()
+                        // TODO: Uncomment when backend returns proper status
+                        List<Listing> activeListings = allListings; // Comment this out to see all listings regardless of status
+                        /*List<Listing> activeListings = allListings.stream()
                                 .filter(listing -> "Active".equalsIgnoreCase(listing.getStatus()))
-                                .collect(Collectors.toList());
+                                .collect(Collectors.toList());*/
 
+                        Log.d(TAG, "onResponse: Active listings = " + activeListings.size());
+                        
                         allActiveListings.clear();
                         allActiveListings.addAll(activeListings);
                         applyHomeFilters();
 
                         if (activeListings.isEmpty()) {
-                            Toast.makeText(MainActivity.this, "Hiện không có bài đăng nào đang hoạt động", Toast.LENGTH_SHORT).show();
+                            Log.w(TAG, "onResponse: No active listings found. All statuses: ");
+                            for (Listing listing : allListings) {
+                                Log.w(TAG, "  - Status: " + listing.getStatus());
+                            }
+                            Toast.makeText(MainActivity.this, "Không có bài đăng Active. Tất cả: " + allListings.size(), Toast.LENGTH_LONG).show();
                         }
                     } else {
                         allActiveListings.clear();
@@ -886,7 +899,7 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                     allActiveListings.clear();
                     applyHomeFilters();
                     Log.e(TAG, "Error: " + response.code());
-                    Toast.makeText(MainActivity.this, "Không thể tải dữ liệu", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Error " + response.code() + ": " + response.message(), Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -895,8 +908,8 @@ public class MainActivity extends AppCompatActivity implements LoginDialogFragme
                 progressBar.setVisibility(View.GONE);
                 allActiveListings.clear();
                 applyHomeFilters();
-                Log.e(TAG, "Failure: " + t.getMessage());
-                Toast.makeText(MainActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Failure: " + t.getMessage(), t);
+                Toast.makeText(MainActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

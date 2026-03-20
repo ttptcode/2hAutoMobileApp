@@ -858,6 +858,11 @@ public class NewsListingsActivity extends AppCompatActivity implements NewsListi
     }
 
     private void onSwipeLeft() {
-        // Swipe Left: Post(2) is last, do nothing
+        // Swipe Left: Post(2) → Chat(3)
+        previousNavItem = currentNavItem;
+        currentNavItem = 3;
+        startActivity(new Intent(this, ChatActivity.class));
+        finish();
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 }

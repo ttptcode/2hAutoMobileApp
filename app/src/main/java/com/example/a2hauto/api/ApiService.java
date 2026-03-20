@@ -68,11 +68,7 @@ public interface ApiService {
             @Path("listingId") String listingId
     );
 
-    @GET("api/Conversations/{userId}")
-    Call<ApiResponse<List<JsonElement>>> getConversations(
-            @Header("Authorization") String authorization,
-            @Path("userId") String userId
-    );
+
 
     @GET("api/UserReputationReviews/listing/{listingId}")
     Call<ApiResponse<List<JsonElement>>> getReviewsByListingId(
@@ -139,7 +135,7 @@ public interface ApiService {
     @POST("api/Messages")
     Call<ApiResponse<Message>> sendMessage(
             @Header("Authorization") String authorization,
-            @Body SendMessageRequest request
+            @Body SendMessageRequest request);
         @GET("api/UserPackages")
         Call<ApiResponse<List<FeeCommission>>> getUserPackages();
 
